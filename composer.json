@@ -1,0 +1,8 @@
+{
+  "name": "qliumisho/portfolio",
+  "description": "Stylish live-updating PHP portfolio for QliUMISHO",
+  "type": "project",
+  "require": {
+    "php": "^8.1"
+  }
+}
