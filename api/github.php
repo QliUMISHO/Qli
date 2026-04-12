@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+error_reporting(E_ALL & ~E_DEPRECATED);
+ini_set('display_errors', '0');
+
 header('Content-Type: application/json; charset=utf-8');
 
 $username  = 'QliUMISHO';
@@ -8,7 +11,11 @@ $userAgent = 'QliPortfolio/1.0';
 
 function jsonResponse(array $payload, int $status = 200): void
 {
-    http_response_code($status);
+    if (!headers_sent()) {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+
     echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -16,6 +23,10 @@ function jsonResponse(array $payload, int $status = 200): void
 function httpGet(string $url, string $userAgent): string
 {
     $ch = curl_init($url);
+
+    if ($ch === false) {
+        throw new RuntimeException('Failed to initialize cURL.');
+    }
 
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -37,8 +48,6 @@ function httpGet(string $url, string $userAgent): string
     $error    = curl_error($ch);
     $status   = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-    curl_close($ch);
-
     if ($response === false || $error !== '') {
         throw new RuntimeException('Request failed: ' . $error);
     }
@@ -47,7 +56,7 @@ function httpGet(string $url, string $userAgent): string
         throw new RuntimeException('HTTP error ' . $status . ' for ' . $url);
     }
 
-    return $response;
+    return (string) $response;
 }
 
 function httpGetJson(string $url, string $userAgent): array
@@ -192,8 +201,8 @@ function parseContributionMarkup(string $html, int $year): array
     }
 
     $xpath = new DOMXPath($dom);
-
     $nodes = $xpath->query('//*[@data-date]');
+
     $daysMap = [];
     $maxCount = 0;
 
@@ -224,6 +233,10 @@ function parseContributionMarkup(string $html, int $year): array
                 $level = (int) $levelAttr;
             }
 
+            if ($count <= 0) {
+                $level = 0;
+            }
+
             $daysMap[$date] = [
                 'date'  => $date,
                 'count' => $count,
@@ -240,6 +253,11 @@ function parseContributionMarkup(string $html, int $year): array
     $days = array_values($daysMap);
 
     foreach ($days as &$day) {
+        if ((int) $day['count'] <= 0) {
+            $day['level'] = 0;
+            continue;
+        }
+
         if (!is_int($day['level']) || $day['level'] < 0 || $day['level'] > 4) {
             $day['level'] = normalizeDayLevel((int) $day['count'], $maxCount);
         } else {
