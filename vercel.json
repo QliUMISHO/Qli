@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
@@ -19,4 +20,30 @@
       "destination": "/assets/:path*"
     }
   ]
+=======
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "index.php": {
+      "runtime": "vercel-php@0.5.2"
+    },
+    "api/*.php": {
+      "runtime": "vercel-php@0.5.2"
+    }
+  },
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.php"
+    }
+  ]
+>>>>>>> fd812a9ecb3d380f2657708a7d5ac8140523de5d
 }
