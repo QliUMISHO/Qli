@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$basePath = '/Qli';
+$basePath = '';
 $cssVersion = file_exists(__DIR__ . '/assets/style.css') ? (string) filemtime(__DIR__ . '/assets/style.css') : (string) time();
 $jsVersion  = file_exists(__DIR__ . '/assets/app.js') ? (string) filemtime(__DIR__ . '/assets/app.js') : (string) time();
 
