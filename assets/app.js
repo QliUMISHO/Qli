@@ -1,6 +1,6 @@
 (() => {
     const config = window.PORTFOLIO_CONFIG || {};
-    const basePath = (config.basePath || '/Qli').replace(/\/$/, '');
+    const basePath = (config.basePath || '').replace(/\/$/, '');
 
     const $ = (selector, scope = document) => scope.querySelector(selector);
     const $$ = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
@@ -221,6 +221,10 @@
                 };
 
                 renderContributions(yearData);
+                renderStats({
+                    ...window.__qliLastData,
+                    contributions: yearData
+                });
             });
         });
     }
@@ -418,7 +422,7 @@
             renderContributions(data.contributions);
             renderRepos(data);
         } catch (error) {
-            console.error(error);
+            console.error('Portfolio API load failed:', error);
             const totalNode = $('#qliContribTotal');
             const monthsNode = $('#qliContribMonths');
             const gridNode = $('#qliContribGrid');
@@ -450,7 +454,11 @@
             return;
         }
 
-        const alreadyPlayed = sessionStorage.getItem('qli-startup-played') === '1';
+        let alreadyPlayed = false;
+        try {
+            alreadyPlayed = sessionStorage.getItem('qli-startup-played') === '1';
+        } catch (e) {}
+
         const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (alreadyPlayed || reducedMotion) {
@@ -477,7 +485,9 @@
                     startup.classList.add('is-hidden');
                     pageShell.classList.remove('qli-page-preload');
                     pageShell.classList.add('qli-page-ready');
-                    sessionStorage.setItem('qli-startup-played', '1');
+                    try {
+                        sessionStorage.setItem('qli-startup-played', '1');
+                    } catch (e) {}
                 }, 800);
                 return;
             }
