@@ -45,7 +45,7 @@ $profile = [
             <div class="qli-startup-kicker">PORTFOLIO EXPERIENCE</div>
 
             <div class="qli-startup-title-wrap">
-                <div class="qli-startup-title-line">Qli / Portfolio</div>
+                <div class="qli-startup-title-line">Qli // Portfolio</div>
                 <div class="qli-startup-title-glow"></div>
             </div>
 
@@ -66,8 +66,8 @@ $profile = [
             <div class="qli-container">
                 <header class="qli-topbar">
                     <div class="qli-brand">
-                        <div class="qli-brand-kicker">LIVE PHP PORTFOLIO</div>
-                        <div class="qli-brand-name">Qli / Portfolio</div>
+                        <div class="qli-brand-kicker">DEV PORTFOLIO</div>
+                        <div class="qli-brand-name">Qli // Portfolio Website</div>
                     </div>
 
                     <div class="qli-topbar-right">
@@ -91,10 +91,10 @@ $profile = [
                 <section class="qli-hero qli-divider" id="intro">
                     <div class="qli-hero-main">
                         <div class="qli-hero-kicker">To create clarity, structure, and identity.</div>
-                        <h1 class="qli-hero-title">Designing systems<br>with code.</h1>
+                        <h1 class="qli-hero-title">Designing systems<br>, clean and stylish.</h1>
                         <p class="qli-hero-copy">
-                            A developer portfolio shaped with an editorial layout, live GitHub data,
-                            and a quieter visual tone.
+                            A developer portfolio made by yours truly shaped with an editorial layout, live GitHub data,
+                            and a nice, stylish look.
                         </p>
                     </div>
                 </section>
@@ -130,9 +130,9 @@ $profile = [
 
                         <div class="qli-profile-right">
                             <div class="qli-name-dots">
-                                <div class="qli-dot-switch active" data-name-value="<?= htmlspecialchars($profile['username'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="username"></div>
-                                <div class="qli-dot-switch" data-name-value="<?= htmlspecialchars($profile['personalName'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="personal name"></div>
-                                <div class="qli-dot-switch" data-name-value="<?= htmlspecialchars($profile['codename'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="codename"></div>
+                                <div class="qli-dot-switch active" data-name-value="<?= htmlspecialchars($profile['username'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="DEV_NAME"></div>
+                                <div class="qli-dot-switch" data-name-value="<?= htmlspecialchars($profile['personalName'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="TRUE NAME"></div>
+                                <div class="qli-dot-switch" data-name-value="<?= htmlspecialchars($profile['codename'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="ALIAS"></div>
                             </div>
 
                             <div class="qli-name-display">
@@ -166,17 +166,15 @@ $profile = [
                             <div class="qli-section-kicker">( About )</div>
                             <h2 class="qli-section-title">Building useful systems with a restrained visual approach.</h2>
                             <p class="qli-section-copy">
-                                This portfolio blends live GitHub-driven data with a simpler, editorial structure.
-                                The direction is cleaner, calmer, and less decorative.
+                                a short, concise view of my progress as an assistant developer. 
                             </p>
                         </div>
 
                         <div class="qli-about-block">
                             <div class="qli-section-kicker">( Profile )</div>
-                            <h2 class="qli-section-title">Code, UI, and practical delivery.</h2>
+                            <h2 class="qli-section-title">Coder, Systems Manager, and IT.</h2>
                             <p class="qli-section-copy">
-                                The layout below keeps your live technology split and contribution graph,
-                                but presents them in a more minimal language.
+                                Working as an assistant developer during downtime and as an L1 IT Support.
                             </p>
                         </div>
                     </div>
@@ -185,8 +183,8 @@ $profile = [
                 <section class="qli-data-grid qli-divider" id="stack">
                     <div class="qli-stack-card">
                         <div class="qli-section-kicker">STACK</div>
-                        <div class="qli-stack-title">Live stack split</div>
-                        <div class="qli-stack-subtitle">Detected from your public repos</div>
+                        <div class="qli-stack-title">Stack split</div>
+                        <div class="qli-stack-subtitle">from my public repos.</div>
 
                         <div class="qli-stack-chart-wrap">
                             <div class="qli-stack-chart" id="qliStackChart"></div>
@@ -200,7 +198,7 @@ $profile = [
                     <div class="qli-contrib-card" id="contributions">
                         <div class="qli-section-kicker">CONTRIBUTIONS</div>
                         <div class="qli-contrib-title">GitHub contribution graph</div>
-                        <div class="qli-contrib-subtitle">Clean custom heatmap from your GitHub activity</div>
+                        <div class="qli-contrib-subtitle">heatmap of my GitHub activity</div>
 
                         <div class="qli-contrib-total" id="qliContribTotal">Loading contributions...</div>
 
@@ -245,7 +243,7 @@ $profile = [
                     <div class="qli-section-kicker">( Public Repos )</div>
                     <h2 class="qli-section-title qli-repos-title">Selected public repositories</h2>
                     <p class="qli-section-copy qli-repos-copy">
-                        Your latest public repositories from GitHub, updated live.
+                        My latest public repositories from GitHub.
                     </p>
 
                     <div class="qli-repo-grid" id="qliRepoGrid">
