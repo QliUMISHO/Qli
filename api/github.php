@@ -2,241 +2,352 @@
 declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: public, max-age=300, s-maxage=300, stale-while-revalidate=600');
 
-$username = 'QliUMISHO';
-$cacheTtl = 600;
-$cacheFile = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'portfolio_github_' . md5($username) . '.json';
+$username  = 'QliUMISHO';
+$userAgent = 'QliPortfolio/1.0';
 
-function respond(int $statusCode, array $payload): void
+function jsonResponse(array $payload, int $status = 200): void
 {
-    http_response_code($statusCode);
+    http_response_code($status);
     echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-function githubRequest(string $url, string $token = ''): array
+function httpGet(string $url, string $userAgent): string
 {
     $ch = curl_init($url);
-
-    $headers = [
-        'Accept: application/vnd.github+json',
-        'User-Agent: QliUMISHO-Portfolio',
-        'X-GitHub-Api-Version: 2026-03-10',
-    ];
-
-    if ($token !== '') {
-        $headers[] = 'Authorization: Bearer ' . $token;
-    }
 
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_TIMEOUT => 20,
+        CURLOPT_TIMEOUT => 30,
         CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_HTTPHEADER => $headers,
-        CURLOPT_HEADER => true,
+        CURLOPT_HTTPHEADER => [
+            'Accept: text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+            'User-Agent: ' . $userAgent,
+            'Referer: https://github.com/',
+            'Cache-Control: no-cache',
+            'Pragma: no-cache',
+        ],
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
     ]);
 
-    $raw = curl_exec($ch);
+    $response = curl_exec($ch);
+    $error    = curl_error($ch);
+    $status   = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-    if ($raw === false) {
-        $error = curl_error($ch);
-        curl_close($ch);
-        throw new RuntimeException('GitHub request failed: ' . $error);
-    }
-
-    $statusCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
     curl_close($ch);
 
-    $headerText = substr($raw, 0, $headerSize);
-    $body = substr($raw, $headerSize);
+    if ($response === false || $error !== '') {
+        throw new RuntimeException('Request failed: ' . $error);
+    }
 
-    $responseHeaders = [];
-    foreach (explode("\r\n", $headerText) as $line) {
-        if (strpos($line, ':') !== false) {
-            [$key, $value] = explode(':', $line, 2);
-            $responseHeaders[strtolower(trim($key))] = trim($value);
+    if ($status >= 400) {
+        throw new RuntimeException('HTTP error ' . $status . ' for ' . $url);
+    }
+
+    return $response;
+}
+
+function httpGetJson(string $url, string $userAgent): array
+{
+    $raw  = httpGet($url, $userAgent);
+    $json = json_decode($raw, true);
+
+    if (!is_array($json)) {
+        throw new RuntimeException('Invalid JSON from ' . $url);
+    }
+
+    return $json;
+}
+
+function fetchGithubProfile(string $username, string $userAgent): array
+{
+    return httpGetJson('https://api.github.com/users/' . rawurlencode($username), $userAgent);
+}
+
+function fetchGithubRepos(string $username, string $userAgent): array
+{
+    $repos = httpGetJson(
+        'https://api.github.com/users/' . rawurlencode($username) . '/repos?sort=updated&per_page=12&type=owner',
+        $userAgent
+    );
+
+    return array_values(array_filter($repos, static function ($repo): bool {
+        return is_array($repo) && !($repo['fork'] ?? false);
+    }));
+}
+
+function fetchRepoLanguages(string $languagesUrl, string $userAgent): array
+{
+    try {
+        $data = httpGetJson($languagesUrl, $userAgent);
+        return is_array($data) ? $data : [];
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+function buildStack(array $repos, string $userAgent): array
+{
+    $totals = [];
+
+    foreach ($repos as $repo) {
+        if (!is_array($repo) || empty($repo['languages_url'])) {
+            continue;
+        }
+
+        $languages = fetchRepoLanguages((string) $repo['languages_url'], $userAgent);
+
+        foreach ($languages as $language => $bytes) {
+            if (!is_string($language) || !is_numeric($bytes)) {
+                continue;
+            }
+
+            if (!isset($totals[$language])) {
+                $totals[$language] = 0;
+            }
+
+            $totals[$language] += (int) $bytes;
         }
     }
 
-    $decoded = json_decode($body, true);
+    arsort($totals);
+    $sum = array_sum($totals);
+
+    if ($sum <= 0) {
+        return [];
+    }
+
+    $stack = [];
+    foreach ($totals as $language => $bytes) {
+        $stack[] = [
+            'name'    => $language,
+            'bytes'   => $bytes,
+            'percent' => round(($bytes / $sum) * 100, 1),
+        ];
+    }
+
+    return array_slice($stack, 0, 6);
+}
+
+function parseCountFromAriaLabel(string $ariaLabel): int
+{
+    $ariaLabel = trim($ariaLabel);
+
+    if ($ariaLabel === '') {
+        return 0;
+    }
+
+    if (stripos($ariaLabel, 'No contributions') !== false) {
+        return 0;
+    }
+
+    if (preg_match('/(\d+)\s+contribution/i', $ariaLabel, $m)) {
+        return (int) $m[1];
+    }
+
+    return 0;
+}
+
+function normalizeDayLevel(int $count, int $maxCount): int
+{
+    if ($count <= 0) {
+        return 0;
+    }
+
+    if ($maxCount <= 1) {
+        return 4;
+    }
+
+    $ratio = $count / $maxCount;
+
+    if ($ratio <= 0.25) {
+        return 1;
+    }
+    if ($ratio <= 0.50) {
+        return 2;
+    }
+    if ($ratio <= 0.75) {
+        return 3;
+    }
+
+    return 4;
+}
+
+function parseContributionMarkup(string $html, int $year): array
+{
+    libxml_use_internal_errors(true);
+
+    $dom = new DOMDocument();
+    $loaded = $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
+
+    if (!$loaded) {
+        return [
+            'year'  => $year,
+            'total' => 0,
+            'days'  => [],
+        ];
+    }
+
+    $xpath = new DOMXPath($dom);
+
+    $nodes = $xpath->query('//*[@data-date]');
+    $daysMap = [];
+    $maxCount = 0;
+
+    if ($nodes instanceof DOMNodeList) {
+        foreach ($nodes as $node) {
+            if (!$node instanceof DOMElement) {
+                continue;
+            }
+
+            $date = trim((string) $node->getAttribute('data-date'));
+            if ($date === '' || strpos($date, $year . '-') !== 0) {
+                continue;
+            }
+
+            $countAttr = trim((string) $node->getAttribute('data-count'));
+            $levelAttr = trim((string) $node->getAttribute('data-level'));
+            $ariaLabel = trim((string) $node->getAttribute('aria-label'));
+
+            $count = 0;
+            if ($countAttr !== '' && is_numeric($countAttr)) {
+                $count = (int) $countAttr;
+            } else {
+                $count = parseCountFromAriaLabel($ariaLabel);
+            }
+
+            $level = null;
+            if ($levelAttr !== '' && is_numeric($levelAttr)) {
+                $level = (int) $levelAttr;
+            }
+
+            $daysMap[$date] = [
+                'date'  => $date,
+                'count' => $count,
+                'level' => $level,
+            ];
+
+            if ($count > $maxCount) {
+                $maxCount = $count;
+            }
+        }
+    }
+
+    ksort($daysMap);
+    $days = array_values($daysMap);
+
+    foreach ($days as &$day) {
+        if (!is_int($day['level']) || $day['level'] < 0 || $day['level'] > 4) {
+            $day['level'] = normalizeDayLevel((int) $day['count'], $maxCount);
+        } else {
+            $day['level'] = max(0, min(4, (int) $day['level']));
+        }
+    }
+    unset($day);
 
     return [
-        'status' => $statusCode,
-        'headers' => $responseHeaders,
-        'body' => $decoded,
-        'raw' => $body,
+        'year'  => $year,
+        'total' => array_sum(array_column($days, 'count')),
+        'days'  => $days,
     ];
 }
 
-function safeString(mixed $value): string
+function fetchContributionYear(string $username, string $userAgent, int $year): array
 {
-    return is_string($value) ? trim($value) : '';
-}
+    $from = sprintf('%d-01-01', $year);
+    $to   = sprintf('%d-12-31', $year);
 
-function formatIsoShort(string $iso): string
-{
-    if ($iso === '') {
-        return '';
+    $urls = [
+        'https://github.com/users/' . rawurlencode($username) . '/contributions?from=' . $from . '&to=' . $to,
+        'https://github.com/' . rawurlencode($username) . '?tab=overview&from=' . $from . '&to=' . $to,
+    ];
+
+    $best = [
+        'year'  => $year,
+        'total' => 0,
+        'days'  => [],
+    ];
+
+    foreach ($urls as $url) {
+        try {
+            $html = httpGet($url, $userAgent);
+            $parsed = parseContributionMarkup($html, $year);
+
+            if (count($parsed['days']) > count($best['days'])) {
+                $best = $parsed;
+            }
+
+            if (!empty($parsed['days'])) {
+                return $parsed;
+            }
+        } catch (Throwable $e) {
+            continue;
+        }
     }
 
-    try {
-        $dt = new DateTimeImmutable($iso);
-        return $dt->format('M d, Y');
-    } catch (Throwable) {
-        return '';
-    }
-}
-
-$token = getenv('GITHUB_TOKEN');
-if (!is_string($token) || $token === '') {
-    $token = isset($_SERVER['GITHUB_TOKEN']) && is_string($_SERVER['GITHUB_TOKEN']) ? $_SERVER['GITHUB_TOKEN'] : '';
-}
-
-if (is_file($cacheFile) && (time() - (int) filemtime($cacheFile) < $cacheTtl)) {
-    $cached = file_get_contents($cacheFile);
-    if ($cached !== false && $cached !== '') {
-        echo $cached;
-        exit;
-    }
+    return $best;
 }
 
 try {
-    $userResponse = githubRequest('https://api.github.com/users/' . rawurlencode($username), $token);
-    $repoResponse = githubRequest(
-        'https://api.github.com/users/' . rawurlencode($username) . '/repos?per_page=100&sort=updated',
-        $token
-    );
+    $profile = fetchGithubProfile($username, $userAgent);
+    $repos   = fetchGithubRepos($username, $userAgent);
+    $stack   = buildStack($repos, $userAgent);
 
-    if ($userResponse['status'] >= 400) {
-        throw new RuntimeException('GitHub user API returned status ' . $userResponse['status']);
+    $currentYear = (int) date('Y');
+    $years = [];
+    $contributionsByYear = [];
+
+    for ($year = $currentYear; $year >= ($currentYear - 5); $year--) {
+        $yearData = fetchContributionYear($username, $userAgent, $year);
+        $years[] = $year;
+        $contributionsByYear[(string) $year] = $yearData;
     }
 
-    if ($repoResponse['status'] >= 400) {
-        throw new RuntimeException('GitHub repo API returned status ' . $repoResponse['status']);
+    $defaultYear = (string) $currentYear;
+    foreach ($years as $year) {
+        if (!empty($contributionsByYear[(string) $year]['days'])) {
+            $defaultYear = (string) $year;
+            break;
+        }
     }
 
-    $user = is_array($userResponse['body']) ? $userResponse['body'] : [];
-    $repos = is_array($repoResponse['body']) ? $repoResponse['body'] : [];
-
-    $publicRepos = [];
-    $languageCounts = [];
-    $totalStars = 0;
-    $totalForks = 0;
-    $totalWatchers = 0;
-
-    foreach ($repos as $repo) {
-        if (!is_array($repo)) {
-            continue;
-        }
-
-        if (($repo['private'] ?? false) === true) {
-            continue;
-        }
-
-        $language = safeString($repo['language'] ?? '');
-        if ($language !== '') {
-            $languageCounts[$language] = ($languageCounts[$language] ?? 0) + 1;
-        }
-
-        $stars = (int) ($repo['stargazers_count'] ?? 0);
-        $forks = (int) ($repo['forks_count'] ?? 0);
-        $watchers = (int) ($repo['watchers_count'] ?? 0);
-
-        $totalStars += $stars;
-        $totalForks += $forks;
-        $totalWatchers += $watchers;
-
-        $publicRepos[] = [
-            'name' => safeString($repo['name'] ?? ''),
-            'description' => safeString($repo['description'] ?? '') !== '' ? safeString($repo['description'] ?? '') : 'No description provided.',
-            'url' => safeString($repo['html_url'] ?? ''),
-            'homepage' => safeString($repo['homepage'] ?? ''),
-            'language' => $language !== '' ? $language : 'Unspecified',
-            'stars' => $stars,
-            'forks' => $forks,
-            'watchers' => $watchers,
-            'updatedAt' => formatIsoShort(safeString($repo['updated_at'] ?? '')),
-            'updatedAtRaw' => safeString($repo['updated_at'] ?? ''),
-            'isFork' => (bool) ($repo['fork'] ?? false),
+    $repoPayload = array_map(static function (array $repo): array {
+        return [
+            'name'        => (string) ($repo['name'] ?? ''),
+            'html_url'    => (string) ($repo['html_url'] ?? ''),
+            'description' => (string) ($repo['description'] ?? ''),
+            'language'    => (string) ($repo['language'] ?? ''),
+            'updated_at'  => (string) ($repo['updated_at'] ?? ''),
         ];
-    }
+    }, array_slice($repos, 0, 9));
 
-    usort($publicRepos, static function (array $a, array $b): int {
-        $dateComparison = strcmp($b['updatedAtRaw'], $a['updatedAtRaw']);
-        if ($dateComparison !== 0) {
-            return $dateComparison;
-        }
-
-        $starComparison = $b['stars'] <=> $a['stars'];
-        if ($starComparison !== 0) {
-            return $starComparison;
-        }
-
-        return strcmp($a['name'], $b['name']);
-    });
-
-    arsort($languageCounts);
-
-    $techStack = [];
-    foreach ($languageCounts as $name => $count) {
-        $techStack[] = [
-            'name' => $name,
-            'count' => $count,
-        ];
-    }
-
-    $payload = [
+    jsonResponse([
         'ok' => true,
-        'source' => 'github-rest-api',
-        'authenticated' => $token !== '',
-        'fetchedAt' => (new DateTimeImmutable('now'))->format(DateTimeInterface::ATOM),
         'profile' => [
-            'name' => safeString($user['name'] ?? 'Raymond A. Auditor'),
-            'login' => safeString($user['login'] ?? $username),
-            'avatarUrl' => safeString($user['avatar_url'] ?? ''),
-            'profileUrl' => safeString($user['html_url'] ?? 'https://github.com/' . $username),
-            'bio' => safeString($user['bio'] ?? ''),
-            'followers' => (int) ($user['followers'] ?? 0),
-            'following' => (int) ($user['following'] ?? 0),
-            'publicRepos' => (int) ($user['public_repos'] ?? count($publicRepos)),
+            'avatarUrl' => (string) ($profile['avatar_url'] ?? ''),
+            'htmlUrl'   => (string) ($profile['html_url'] ?? ''),
         ],
         'stats' => [
-            'publicRepos' => (int) ($user['public_repos'] ?? count($publicRepos)),
-            'followers' => (int) ($user['followers'] ?? 0),
-            'following' => (int) ($user['following'] ?? 0),
-            'totalStars' => $totalStars,
-            'totalForks' => $totalForks,
-            'totalWatchers' => $totalWatchers,
+            'publicRepos' => (int) ($profile['public_repos'] ?? 0),
+            'followers'   => (int) ($profile['followers'] ?? 0),
         ],
-        'techStack' => $techStack,
-        'repos' => array_slice($publicRepos, 0, 9),
-    ];
-
-    $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    if ($json === false) {
-        throw new RuntimeException('Failed to encode response.');
-    }
-
-    @file_put_contents($cacheFile, $json);
-    echo $json;
-    exit;
-} catch (Throwable $e) {
-    if (is_file($cacheFile)) {
-        $cached = file_get_contents($cacheFile);
-        if ($cached !== false && $cached !== '') {
-            echo $cached;
-            exit;
-        }
-    }
-
-    respond(500, [
-        'ok' => false,
-        'message' => 'Unable to load GitHub data right now.',
-        'error' => $e->getMessage(),
+        'stack' => $stack,
+        'repos' => $repoPayload,
+        'contribution_years' => array_map('strval', $years),
+        'default_contribution_year' => $defaultYear,
+        'contributions_by_year' => $contributionsByYear,
+        'contributions' => $contributionsByYear[$defaultYear] ?? [
+            'year'  => (int) $defaultYear,
+            'total' => 0,
+            'days'  => [],
+        ],
     ]);
+} catch (Throwable $e) {
+    jsonResponse([
+        'ok' => false,
+        'message' => $e->getMessage(),
+    ], 500);
 }
