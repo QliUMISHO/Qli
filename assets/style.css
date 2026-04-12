@@ -528,9 +528,9 @@ html[data-theme="dark"] .qli-theme-toggle-thumb {
 
 .qli-terminal-caret {
     display: none;
-    width: 0.13em;
+    width: 0.32em;
     height: 0.92em;
-    background: #000000;
+    background: #ffffff;
     border-radius: 0;
     transform: translateY(0.04em);
     animation: qliTerminalBlink 1s steps(1, end) infinite;
@@ -541,8 +541,9 @@ html[data-theme="dark"] .qli-theme-toggle-thumb {
     display: inline-block;
 }
 
+html[data-theme="light"] .qli-terminal-caret,
 html[data-theme="dark"] .qli-terminal-caret {
-    background: #000000;
+    background: #ffffff;
 }
 
 .qli-name-label {
