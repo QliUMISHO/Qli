@@ -1,18 +1,11 @@
-<<<<<<< HEAD
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "api/*.php": {
-      "runtime": "vercel-php@0.5.2"
-<<<<<<< HEAD
-=======
+      "runtime": "vercel-php@0.9.0"
     }
   },
   "rewrites": [
-    {
-      "source": "/",
-      "destination": "/api/index.php"
-    },
     {
       "source": "/api/:path*",
       "destination": "/api/:path*"
@@ -22,40 +15,4 @@
       "destination": "/assets/:path*"
     }
   ]
-=======
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "index.php": {
-      "runtime": "vercel-php@0.5.2"
-    },
-    "api/*.php": {
-      "runtime": "vercel-php@0.5.2"
->>>>>>> e72e942531c802e3e2d6d5efd3733cd5a21098c9
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/",
-      "destination": "/api/index.php"
-    },
-    {
-<<<<<<< HEAD
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    },
-    {
-      "source": "/assets/:path*",
-      "destination": "/assets/:path*"
-=======
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.php"
->>>>>>> e72e942531c802e3e2d6d5efd3733cd5a21098c9
-    }
-  ]
->>>>>>> fd812a9ecb3d380f2657708a7d5ac8140523de5d
 }
