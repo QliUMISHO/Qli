@@ -130,15 +130,18 @@ $profile = [
 
                         <div class="qli-profile-right">
                             <div class="qli-name-dots">
-                                <div class="qli-dot-switch active" data-name-value="<?= htmlspecialchars($profile['username'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="DEV_NAME"></div>
-                                <div class="qli-dot-switch" data-name-value="<?= htmlspecialchars($profile['personalName'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="TRUE NAME"></div>
-                                <div class="qli-dot-switch" data-name-value="<?= htmlspecialchars($profile['codename'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="ALIAS"></div>
+                                <div class="qli-dot-switch active" data-name-value="<?= htmlspecialchars($profile['username'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="DEV_NAME" data-show-caret="true"></div>
+                                <div class="qli-dot-switch" data-name-value="<?= htmlspecialchars($profile['personalName'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="TRUE NAME" data-show-caret="false"></div>
+                                <div class="qli-dot-switch" data-name-value="<?= htmlspecialchars($profile['codename'], ENT_QUOTES, 'UTF-8') ?>" data-name-label="ALIAS" data-show-caret="false"></div>
                             </div>
 
                             <div class="qli-name-display">
                                 <div class="qli-name-stage" id="qliNameStage">
-                                    <div class="qli-name-value" id="qliNameValue"><?= htmlspecialchars($profile['username'], ENT_QUOTES, 'UTF-8') ?></div>
-                                    <div class="qli-name-label" id="qliNameLabel">username</div>
+                                    <div class="qli-name-value" id="qliNameValueWrap">
+                                        <span id="qliNameValue"><?= htmlspecialchars($profile['username'], ENT_QUOTES, 'UTF-8') ?></span>
+                                        <span class="qli-terminal-caret is-visible" id="qliTerminalCaret" aria-hidden="true"></span>
+                                    </div>
+                                    <div class="qli-name-label" id="qliNameLabel">DEV_NAME</div>
                                 </div>
                             </div>
 

@@ -520,6 +520,29 @@ html[data-theme="dark"] .qli-theme-toggle-thumb {
     line-height: 1;
     font-weight: 800;
     letter-spacing: -0.06em;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    width: fit-content;
+}
+
+.qli-terminal-caret {
+    display: none;
+    width: 0.09em;
+    height: 0.92em;
+    background: #000000;
+    border-radius: 0;
+    transform: translateY(0.04em);
+    animation: qliTerminalBlink 1s steps(1, end) infinite;
+    flex: 0 0 auto;
+}
+
+.qli-terminal-caret.is-visible {
+    display: inline-block;
+}
+
+html[data-theme="dark"] .qli-terminal-caret {
+    background: #000000;
 }
 
 .qli-name-label {
@@ -1023,6 +1046,15 @@ html[data-theme="dark"] .qli-year-pill.active {
     }
     to {
         transform: scale(1.04) translate3d(10px, -8px, 0);
+    }
+}
+
+@keyframes qliTerminalBlink {
+    0%, 49% {
+        opacity: 1;
+    }
+    50%, 100% {
+        opacity: 0;
     }
 }
 

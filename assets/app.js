@@ -9,6 +9,7 @@
 
     let activeNameValue = '';
     let activeNameLabel = '';
+    let activeShowCaret = false;
     let nameAnimating = false;
 
     function escapeHtml(value) {
@@ -92,14 +93,26 @@
         });
     }
 
-    function swapDisplayedName(value, label) {
+    function setCaretVisibility(isVisible) {
+        const caret = $('#qliTerminalCaret');
+        if (!caret) return;
+        caret.classList.toggle('is-visible', !!isVisible);
+    }
+
+    function swapDisplayedName(value, label, showCaret) {
         const stage = $('#qliNameStage');
         const valueNode = $('#qliNameValue');
         const labelNode = $('#qliNameLabel');
 
         if (!stage || !valueNode || !labelNode) return;
         if (nameAnimating) return;
-        if (activeNameValue === value && activeNameLabel === label) return;
+        if (
+            activeNameValue === value &&
+            activeNameLabel === label &&
+            activeShowCaret === !!showCaret
+        ) {
+            return;
+        }
 
         nameAnimating = true;
         stage.classList.remove('is-sliding-in');
@@ -108,6 +121,7 @@
         const handleOut = () => {
             valueNode.textContent = value;
             labelNode.textContent = label;
+            setCaretVisibility(showCaret);
 
             stage.classList.remove('is-sliding-out');
             stage.classList.add('is-sliding-in');
@@ -116,6 +130,7 @@
                 stage.classList.remove('is-sliding-in');
                 activeNameValue = value;
                 activeNameLabel = label;
+                activeShowCaret = !!showCaret;
                 nameAnimating = false;
                 stage.removeEventListener('animationend', handleIn);
             };
@@ -134,11 +149,12 @@
             const activate = () => {
                 const nextValue = dot.dataset.nameValue || '';
                 const nextLabel = dot.dataset.nameLabel || '';
+                const showCaret = dot.dataset.showCaret === 'true';
 
                 dots.forEach((d) => d.classList.remove('active'));
                 dot.classList.add('active');
 
-                swapDisplayedName(nextValue, nextLabel);
+                swapDisplayedName(nextValue, nextLabel, showCaret);
             };
 
             dot.addEventListener('mouseenter', activate);
@@ -390,10 +406,15 @@
         if (first && valueNode && labelNode) {
             const value = first.dataset.nameValue || '';
             const label = first.dataset.nameLabel || '';
+            const showCaret = first.dataset.showCaret === 'true';
+
             valueNode.textContent = value;
             labelNode.textContent = label;
+            setCaretVisibility(showCaret);
+
             activeNameValue = value;
             activeNameLabel = label;
+            activeShowCaret = showCaret;
         }
     }
 
