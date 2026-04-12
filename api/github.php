@@ -8,6 +8,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 $username  = 'QliUMISHO';
 $userAgent = 'QliPortfolio/1.0';
+$githubToken = trim((string) ($_ENV['GITHUB_TOKEN'] ?? getenv('GITHUB_TOKEN') ?: ''));
 
 function jsonResponse(array $payload, int $status = 200): void
 {
@@ -20,7 +21,7 @@ function jsonResponse(array $payload, int $status = 200): void
     exit;
 }
 
-function httpGet(string $url, string $userAgent): string
+function httpGet(string $url, string $userAgent, array $extraHeaders = []): string
 {
     $ch = curl_init($url);
 
@@ -28,18 +29,19 @@ function httpGet(string $url, string $userAgent): string
         throw new RuntimeException('Failed to initialize cURL.');
     }
 
+    $headers = array_merge([
+        'Accept: application/json',
+        'User-Agent: ' . $userAgent,
+        'Cache-Control: no-cache',
+        'Pragma: no-cache',
+    ], $extraHeaders);
+
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_TIMEOUT => 30,
         CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_HTTPHEADER => [
-            'Accept: text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
-            'User-Agent: ' . $userAgent,
-            'Referer: https://github.com/',
-            'Cache-Control: no-cache',
-            'Pragma: no-cache',
-        ],
+        CURLOPT_HTTPHEADER => $headers,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
     ]);
@@ -59,9 +61,66 @@ function httpGet(string $url, string $userAgent): string
     return (string) $response;
 }
 
-function httpGetJson(string $url, string $userAgent): array
+function httpPostJson(string $url, array $payload, string $userAgent, array $extraHeaders = []): array
 {
-    $raw  = httpGet($url, $userAgent);
+    $ch = curl_init($url);
+
+    if ($ch === false) {
+        throw new RuntimeException('Failed to initialize cURL.');
+    }
+
+    $jsonPayload = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    if ($jsonPayload === false) {
+        throw new RuntimeException('Failed to encode JSON payload.');
+    }
+
+    $headers = array_merge([
+        'Accept: application/json',
+        'Content-Type: application/json',
+        'User-Agent: ' . $userAgent,
+        'Cache-Control: no-cache',
+        'Pragma: no-cache',
+    ], $extraHeaders);
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $jsonPayload,
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+    ]);
+
+    $response = curl_exec($ch);
+    $error    = curl_error($ch);
+    $status   = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    if ($response === false || $error !== '') {
+        throw new RuntimeException('Request failed: ' . $error);
+    }
+
+    $decoded = json_decode((string) $response, true);
+    if (!is_array($decoded)) {
+        throw new RuntimeException('Invalid JSON from ' . $url);
+    }
+
+    if ($status >= 400) {
+        $message = 'HTTP error ' . $status . ' for ' . $url;
+        if (!empty($decoded['message']) && is_string($decoded['message'])) {
+            $message .= ': ' . $decoded['message'];
+        }
+        throw new RuntimeException($message);
+    }
+
+    return $decoded;
+}
+
+function httpGetJson(string $url, string $userAgent, array $extraHeaders = []): array
+{
+    $raw  = httpGet($url, $userAgent, $extraHeaders);
     $json = json_decode($raw, true);
 
     if (!is_array($json)) {
@@ -141,25 +200,6 @@ function buildStack(array $repos, string $userAgent): array
     return array_slice($stack, 0, 6);
 }
 
-function parseCountFromAriaLabel(string $ariaLabel): int
-{
-    $ariaLabel = trim($ariaLabel);
-
-    if ($ariaLabel === '') {
-        return 0;
-    }
-
-    if (stripos($ariaLabel, 'No contributions') !== false) {
-        return 0;
-    }
-
-    if (preg_match('/(\d+)\s+contribution/i', $ariaLabel, $m)) {
-        return (int) $m[1];
-    }
-
-    return 0;
-}
-
 function normalizeDayLevel(int $count, int $maxCount): int
 {
     if ($count <= 0) {
@@ -185,128 +225,114 @@ function normalizeDayLevel(int $count, int $maxCount): int
     return 4;
 }
 
-function parseContributionMarkup(string $html, int $year): array
+function fetchContributionYearGraphQL(string $username, string $userAgent, string $token, int $year): array
 {
-    libxml_use_internal_errors(true);
-
-    $dom = new DOMDocument();
-    $loaded = $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html);
-
-    if (!$loaded) {
-        return [
-            'year'  => $year,
-            'total' => 0,
-            'days'  => [],
-        ];
+    if ($token === '') {
+        throw new RuntimeException('Missing GITHUB_TOKEN environment variable.');
     }
 
-    $xpath = new DOMXPath($dom);
-    $nodes = $xpath->query('//*[@data-date]');
+    $from = sprintf('%d-01-01T00:00:00Z', $year);
+    $to   = sprintf('%d-12-31T23:59:59Z', $year);
 
-    $daysMap = [];
+    $query = <<<'GRAPHQL'
+query($login: String!, $from: DateTime!, $to: DateTime!) {
+  user(login: $login) {
+    contributionsCollection(from: $from, to: $to) {
+      contributionCalendar {
+        totalContributions
+        weeks {
+          contributionDays {
+            date
+            contributionCount
+          }
+        }
+      }
+    }
+  }
+}
+GRAPHQL;
+
+    $result = httpPostJson(
+        'https://api.github.com/graphql',
+        [
+            'query' => $query,
+            'variables' => [
+                'login' => $username,
+                'from'  => $from,
+                'to'    => $to,
+            ],
+        ],
+        $userAgent,
+        ['Authorization: Bearer ' . $token]
+    );
+
+    if (!empty($result['errors']) && is_array($result['errors'])) {
+        $messages = [];
+        foreach ($result['errors'] as $error) {
+            if (is_array($error) && !empty($error['message']) && is_string($error['message'])) {
+                $messages[] = $error['message'];
+            }
+        }
+
+        throw new RuntimeException(
+            'GitHub GraphQL error: ' . ($messages ? implode('; ', $messages) : 'Unknown error')
+        );
+    }
+
+    $calendar = $result['data']['user']['contributionsCollection']['contributionCalendar'] ?? null;
+    if (!is_array($calendar)) {
+        throw new RuntimeException('GitHub GraphQL returned no contribution calendar.');
+    }
+
+    $days = [];
     $maxCount = 0;
 
-    if ($nodes instanceof DOMNodeList) {
-        foreach ($nodes as $node) {
-            if (!$node instanceof DOMElement) {
+    $weeks = $calendar['weeks'] ?? [];
+    if (is_array($weeks)) {
+        foreach ($weeks as $week) {
+            if (!is_array($week) || !isset($week['contributionDays']) || !is_array($week['contributionDays'])) {
                 continue;
             }
 
-            $date = trim((string) $node->getAttribute('data-date'));
-            if ($date === '' || strpos($date, $year . '-') !== 0) {
-                continue;
-            }
+            foreach ($week['contributionDays'] as $day) {
+                if (!is_array($day)) {
+                    continue;
+                }
 
-            $countAttr = trim((string) $node->getAttribute('data-count'));
-            $levelAttr = trim((string) $node->getAttribute('data-level'));
-            $ariaLabel = trim((string) $node->getAttribute('aria-label'));
+                $date = (string) ($day['date'] ?? '');
+                $count = (int) ($day['contributionCount'] ?? 0);
 
-            $count = 0;
-            if ($countAttr !== '' && is_numeric($countAttr)) {
-                $count = (int) $countAttr;
-            } else {
-                $count = parseCountFromAriaLabel($ariaLabel);
-            }
+                if ($date === '' || strpos($date, $year . '-') !== 0) {
+                    continue;
+                }
 
-            $level = null;
-            if ($levelAttr !== '' && is_numeric($levelAttr)) {
-                $level = (int) $levelAttr;
-            }
+                if ($count > $maxCount) {
+                    $maxCount = $count;
+                }
 
-            if ($count <= 0) {
-                $level = 0;
-            }
-
-            $daysMap[$date] = [
-                'date'  => $date,
-                'count' => $count,
-                'level' => $level,
-            ];
-
-            if ($count > $maxCount) {
-                $maxCount = $count;
+                $days[] = [
+                    'date'  => $date,
+                    'count' => $count,
+                    'level' => 0,
+                ];
             }
         }
     }
 
-    ksort($daysMap);
-    $days = array_values($daysMap);
+    usort($days, static function (array $a, array $b): int {
+        return strcmp((string) $a['date'], (string) $b['date']);
+    });
 
     foreach ($days as &$day) {
-        if ((int) $day['count'] <= 0) {
-            $day['level'] = 0;
-            continue;
-        }
-
-        if (!is_int($day['level']) || $day['level'] < 0 || $day['level'] > 4) {
-            $day['level'] = normalizeDayLevel((int) $day['count'], $maxCount);
-        } else {
-            $day['level'] = max(0, min(4, (int) $day['level']));
-        }
+        $day['level'] = normalizeDayLevel((int) $day['count'], $maxCount);
     }
     unset($day);
 
     return [
         'year'  => $year,
-        'total' => array_sum(array_column($days, 'count')),
+        'total' => (int) ($calendar['totalContributions'] ?? array_sum(array_column($days, 'count'))),
         'days'  => $days,
     ];
-}
-
-function fetchContributionYear(string $username, string $userAgent, int $year): array
-{
-    $from = sprintf('%d-01-01', $year);
-    $to   = sprintf('%d-12-31', $year);
-
-    $urls = [
-        'https://github.com/users/' . rawurlencode($username) . '/contributions?from=' . $from . '&to=' . $to,
-        'https://github.com/' . rawurlencode($username) . '?tab=overview&from=' . $from . '&to=' . $to,
-    ];
-
-    $best = [
-        'year'  => $year,
-        'total' => 0,
-        'days'  => [],
-    ];
-
-    foreach ($urls as $url) {
-        try {
-            $html = httpGet($url, $userAgent);
-            $parsed = parseContributionMarkup($html, $year);
-
-            if (count($parsed['days']) > count($best['days'])) {
-                $best = $parsed;
-            }
-
-            if (!empty($parsed['days'])) {
-                return $parsed;
-            }
-        } catch (Throwable $e) {
-            continue;
-        }
-    }
-
-    return $best;
 }
 
 try {
@@ -314,19 +340,22 @@ try {
     $repos   = fetchGithubRepos($username, $userAgent);
     $stack   = buildStack($repos, $userAgent);
 
-    $currentYear = (int) date('Y');
+    $currentYear = (int) gmdate('Y');
     $years = [];
     $contributionsByYear = [];
 
     for ($year = $currentYear; $year >= ($currentYear - 5); $year--) {
-        $yearData = fetchContributionYear($username, $userAgent, $year);
+        $yearData = fetchContributionYearGraphQL($username, $userAgent, $githubToken, $year);
         $years[] = $year;
         $contributionsByYear[(string) $year] = $yearData;
     }
 
     $defaultYear = (string) $currentYear;
     foreach ($years as $year) {
-        if (!empty($contributionsByYear[(string) $year]['days'])) {
+        if (
+            isset($contributionsByYear[(string) $year]['total']) &&
+            (int) $contributionsByYear[(string) $year]['total'] > 0
+        ) {
             $defaultYear = (string) $year;
             break;
         }
