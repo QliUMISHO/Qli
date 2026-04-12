@@ -526,6 +526,50 @@ html[data-theme="dark"] .qli-theme-toggle-thumb {
     width: fit-content;
 }
 
+#qliNameValue {
+    position: relative;
+    display: inline-block;
+}
+
+#qliNameValue.is-glitching {
+    color: #f4f8ff;
+    text-shadow:
+        -0.035em 0 rgba(255, 0, 102, 0.95),
+        0.035em -0.02em rgba(0, 255, 255, 0.95),
+        -0.02em 0.03em rgba(255, 255, 255, 0.8);
+    animation: qliGlitchBase 180ms steps(2, end) infinite;
+}
+
+#qliNameValue.is-glitching::before,
+#qliNameValue.is-glitching::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.92;
+}
+
+#qliNameValue.is-glitching::before {
+    color: rgba(255, 0, 102, 0.95);
+    text-shadow:
+        -0.05em 0 rgba(255, 0, 102, 1),
+        0.04em 0 rgba(255, 255, 255, 0.45);
+    transform: translate(-0.045em, -0.01em);
+    clip-path: inset(4% 0 56% 0);
+    animation: qliGlitchSliceA 130ms steps(2, end) infinite;
+}
+
+#qliNameValue.is-glitching::after {
+    color: rgba(0, 255, 255, 0.95);
+    text-shadow:
+        0.05em 0 rgba(0, 255, 255, 1),
+        -0.04em 0 rgba(255, 255, 255, 0.45);
+    transform: translate(0.05em, 0.012em);
+    clip-path: inset(54% 0 8% 0);
+    animation: qliGlitchSliceB 95ms steps(2, end) infinite;
+}
+
 .qli-terminal-caret {
     display: none;
     width: 0.32em;
@@ -1056,6 +1100,163 @@ html[data-theme="dark"] .qli-year-pill.active {
     }
     50%, 100% {
         opacity: 0;
+    }
+}
+
+@keyframes qliGlitchBase {
+    0% {
+        transform: translate(0, 0) skewX(0deg);
+        filter: blur(0);
+    }
+    14% {
+        transform: translate(-0.01em, 0.01em) skewX(-9deg);
+        filter: blur(0.01em);
+    }
+    15% {
+        transform: translate(0.03em, -0.01em) skewX(12deg);
+        filter: blur(0.02em);
+    }
+    16% {
+        transform: translate(-0.045em, 0.02em) skewX(-14deg);
+        filter: blur(0.025em);
+    }
+    17% {
+        transform: translate(0.02em, -0.015em) skewX(11deg);
+        filter: blur(0.01em);
+    }
+    28% {
+        transform: translate(0, 0) skewX(0deg);
+        filter: blur(0);
+    }
+    52% {
+        transform: translate(0.01em, 0) skewX(7deg);
+        filter: blur(0.008em);
+    }
+    53% {
+        transform: translate(-0.04em, 0.02em) skewX(-16deg);
+        filter: blur(0.028em);
+    }
+    54% {
+        transform: translate(0.035em, -0.018em) skewX(18deg);
+        filter: blur(0.022em);
+    }
+    55% {
+        transform: translate(-0.02em, 0.01em) skewX(-10deg);
+        filter: blur(0.012em);
+    }
+    72% {
+        transform: translate(0, 0) skewX(0deg);
+        filter: blur(0);
+    }
+    88% {
+        transform: translate(0.015em, -0.012em) skewX(8deg);
+        filter: blur(0.012em);
+    }
+    89% {
+        transform: translate(-0.05em, 0.016em) skewX(-18deg);
+        filter: blur(0.03em);
+    }
+    90% {
+        transform: translate(0.04em, -0.022em) skewX(15deg);
+        filter: blur(0.024em);
+    }
+    100% {
+        transform: translate(0, 0) skewX(0deg);
+        filter: blur(0);
+    }
+}
+
+@keyframes qliGlitchSliceA {
+    0% {
+        clip-path: inset(2% 0 71% 0);
+        transform: translate(-0.02em, -0.005em);
+    }
+    10% {
+        clip-path: inset(46% 0 18% 0);
+        transform: translate(-0.09em, 0.02em);
+    }
+    20% {
+        clip-path: inset(14% 0 56% 0);
+        transform: translate(-0.03em, -0.01em);
+    }
+    30% {
+        clip-path: inset(62% 0 4% 0);
+        transform: translate(-0.11em, 0.02em);
+    }
+    40% {
+        clip-path: inset(24% 0 38% 0);
+        transform: translate(-0.05em, -0.02em);
+    }
+    50% {
+        clip-path: inset(74% 0 3% 0);
+        transform: translate(-0.12em, 0.015em);
+    }
+    60% {
+        clip-path: inset(8% 0 67% 0);
+        transform: translate(-0.025em, -0.01em);
+    }
+    70% {
+        clip-path: inset(54% 0 11% 0);
+        transform: translate(-0.095em, 0.025em);
+    }
+    80% {
+        clip-path: inset(17% 0 53% 0);
+        transform: translate(-0.035em, -0.01em);
+    }
+    90% {
+        clip-path: inset(68% 0 5% 0);
+        transform: translate(-0.105em, 0.015em);
+    }
+    100% {
+        clip-path: inset(4% 0 71% 0);
+        transform: translate(-0.02em, -0.005em);
+    }
+}
+
+@keyframes qliGlitchSliceB {
+    0% {
+        clip-path: inset(59% 0 6% 0);
+        transform: translate(0.03em, 0.01em);
+    }
+    10% {
+        clip-path: inset(10% 0 63% 0);
+        transform: translate(0.11em, -0.02em);
+    }
+    20% {
+        clip-path: inset(48% 0 17% 0);
+        transform: translate(0.05em, 0.015em);
+    }
+    30% {
+        clip-path: inset(18% 0 51% 0);
+        transform: translate(0.095em, -0.02em);
+    }
+    40% {
+        clip-path: inset(66% 0 3% 0);
+        transform: translate(0.12em, 0.02em);
+    }
+    50% {
+        clip-path: inset(28% 0 33% 0);
+        transform: translate(0.06em, -0.015em);
+    }
+    60% {
+        clip-path: inset(73% 0 2% 0);
+        transform: translate(0.12em, 0.02em);
+    }
+    70% {
+        clip-path: inset(12% 0 59% 0);
+        transform: translate(0.085em, -0.02em);
+    }
+    80% {
+        clip-path: inset(51% 0 13% 0);
+        transform: translate(0.055em, 0.012em);
+    }
+    90% {
+        clip-path: inset(21% 0 45% 0);
+        transform: translate(0.1em, -0.02em);
+    }
+    100% {
+        clip-path: inset(59% 0 6% 0);
+        transform: translate(0.03em, 0.01em);
     }
 }
 

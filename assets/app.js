@@ -99,12 +99,32 @@
         caret.classList.toggle('is-visible', !!isVisible);
     }
 
-    function swapDisplayedName(value, label, showCaret) {
-        const stage = $('#qliNameStage');
+    function setGlitchState(value, label) {
+        const valueNode = $('#qliNameValue');
+        if (!valueNode) return;
+
+        const shouldGlitch = String(label || '').toUpperCase() === 'ALIAS' && String(value || '').trim() !== '';
+
+        valueNode.classList.toggle('is-glitching', shouldGlitch);
+        valueNode.setAttribute('data-text', shouldGlitch ? String(value) : '');
+    }
+
+    function applyNameState(value, label, showCaret) {
         const valueNode = $('#qliNameValue');
         const labelNode = $('#qliNameLabel');
 
-        if (!stage || !valueNode || !labelNode) return;
+        if (!valueNode || !labelNode) return;
+
+        valueNode.textContent = value;
+        labelNode.textContent = label;
+        setCaretVisibility(showCaret);
+        setGlitchState(value, label);
+    }
+
+    function swapDisplayedName(value, label, showCaret) {
+        const stage = $('#qliNameStage');
+
+        if (!stage) return;
         if (nameAnimating) return;
         if (
             activeNameValue === value &&
@@ -119,9 +139,7 @@
         stage.classList.add('is-sliding-out');
 
         const handleOut = () => {
-            valueNode.textContent = value;
-            labelNode.textContent = label;
-            setCaretVisibility(showCaret);
+            applyNameState(value, label, showCaret);
 
             stage.classList.remove('is-sliding-out');
             stage.classList.add('is-sliding-in');
@@ -400,22 +418,17 @@
         setAvatar(avatarUrl);
 
         const first = $('.qli-dot-switch.active');
-        const valueNode = $('#qliNameValue');
-        const labelNode = $('#qliNameLabel');
+        if (!first) return;
 
-        if (first && valueNode && labelNode) {
-            const value = first.dataset.nameValue || '';
-            const label = first.dataset.nameLabel || '';
-            const showCaret = first.dataset.showCaret === 'true';
+        const value = first.dataset.nameValue || '';
+        const label = first.dataset.nameLabel || '';
+        const showCaret = first.dataset.showCaret === 'true';
 
-            valueNode.textContent = value;
-            labelNode.textContent = label;
-            setCaretVisibility(showCaret);
+        applyNameState(value, label, showCaret);
 
-            activeNameValue = value;
-            activeNameLabel = label;
-            activeShowCaret = showCaret;
-        }
+        activeNameValue = value;
+        activeNameLabel = label;
+        activeShowCaret = showCaret;
     }
 
     async function loadPortfolioData() {
