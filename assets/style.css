@@ -522,13 +522,13 @@ html[data-theme="dark"] .qli-theme-toggle-thumb {
     letter-spacing: -0.06em;
     display: inline-flex;
     align-items: baseline;
-    gap: 3px;
+    gap: 0.24em;
     width: fit-content;
 }
 
 .qli-terminal-caret {
     display: none;
-    width: 0.09em;
+    width: 0.13em;
     height: 0.92em;
     background: #000000;
     border-radius: 0;
