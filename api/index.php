@@ -91,7 +91,7 @@ $profile = [
                 <section class="qli-hero qli-divider" id="intro">
                     <div class="qli-hero-main">
                         <div class="qli-hero-kicker">To create clarity, structure, and identity.</div>
-                        <h1 class="qli-hero-title">Designing systems<br>, clean and stylish.</h1>
+                        <h1 class="qli-hero-title">Designing systems,<br>clean and stylish.</h1>
                         <p class="qli-hero-copy">
                             A developer portfolio made by yours truly shaped with an editorial layout, live GitHub data,
                             and a nice, stylish look.
