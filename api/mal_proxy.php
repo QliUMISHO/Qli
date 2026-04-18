@@ -17,7 +17,7 @@ function respond(array $payload, int $status = 200): void
     exit;
 }
 
-function fetchHtml(string $url): string
+function httpGet(string $url): string
 {
     $ch = curl_init($url);
 
@@ -28,162 +28,127 @@ function fetchHtml(string $url): string
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_TIMEOUT => 25,
+        CURLOPT_TIMEOUT => 30,
         CURLOPT_CONNECTTIMEOUT => 10,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
         CURLOPT_HTTPHEADER => [
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0 Safari/537.36',
-            'Accept-Language: en-US,en;q=0.9',
+            'Accept: application/json',
+            'User-Agent: QliPortfolio/1.0',
+            'Cache-Control: no-cache',
+            'Pragma: no-cache',
         ],
     ]);
 
-    $body = curl_exec($ch);
+    $response = curl_exec($ch);
     $error = curl_error($ch);
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if ($body === false || $error !== '') {
+    if ($response === false || $error !== '') {
         throw new RuntimeException('Request failed: ' . $error);
     }
 
     if ($status >= 400) {
-        throw new RuntimeException('MAL returned HTTP ' . $status);
+        throw new RuntimeException('HTTP ' . $status . ' from upstream.');
     }
 
-    return (string) $body;
+    return (string) $response;
 }
 
-function htmlDecode(string $value): string
+function httpGetJson(string $url): array
 {
-    return html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $raw = httpGet($url);
+    $json = json_decode($raw, true);
+
+    if (!is_array($json)) {
+        throw new RuntimeException('Invalid JSON from upstream.');
+    }
+
+    return $json;
 }
 
-function normalizeText(string $value): string
+function normalizeText(?string $value): string
 {
+    $value = html_entity_decode((string) ($value ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $value = strip_tags($value);
-    $value = htmlDecode($value);
     $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
     return trim($value);
 }
 
-function absoluteUrl(string $url): string
+function firstNonEmpty(array $values, string $fallback = ''): string
 {
-    $url = trim($url);
-
-    if ($url === '') {
-        return '';
-    }
-
-    if (preg_match('~^https?://~i', $url)) {
-        return $url;
-    }
-
-    if (strpos($url, '//') === 0) {
-        return 'https:' . $url;
-    }
-
-    if ($url[0] === '/') {
-        return 'https://myanimelist.net' . $url;
-    }
-
-    return 'https://myanimelist.net/' . ltrim($url, '/');
-}
-
-function collectImagesFromHtml(string $html, int $limit = 10): array
-{
-    preg_match_all('~https://cdn\.myanimelist\.net/images/[^\s"\']+~i', $html, $matches);
-    $urls = array_values(array_unique($matches[0] ?? []));
-
-    return array_slice($urls, 0, $limit);
-}
-
-function firstMatch(string $html, array $patterns): ?string
-{
-    foreach ($patterns as $pattern) {
-        if (preg_match($pattern, $html, $matches)) {
-            $value = $matches[1] ?? '';
-            $value = normalizeText((string) $value);
-            if ($value !== '') {
-                return $value;
-            }
+    foreach ($values as $value) {
+        $value = trim((string) $value);
+        if ($value !== '') {
+            return $value;
         }
     }
 
-    return null;
+    return $fallback;
 }
 
-function firstImage(string $html, array $patterns): ?string
+function safeUrl(?string $value, string $fallback = ''): string
 {
-    foreach ($patterns as $pattern) {
-        if (preg_match($pattern, $html, $matches)) {
-            $value = trim((string) ($matches[1] ?? ''));
-            if ($value !== '') {
-                return absoluteUrl($value);
-            }
-        }
+    $value = trim((string) ($value ?? ''));
+    if ($value !== '' && preg_match('~^https?://~i', $value)) {
+        return $value;
     }
-
-    return null;
+    return $fallback;
 }
 
-function collectCoverCards(string $html, string $fallbackUrl, int $limit = 10): array
+function mapAnimeItems(array $items, int $limit = 10): array
 {
-    $items = [];
+    $mapped = [];
+    $seen = [];
 
-    $patterns = [
-        '~<a[^>]+href="([^"]+)"[^>]*>.*?<img[^>]+(?:data-src|src)="([^"]+)"[^>]+alt="([^"]+)"[^>]*>.*?</a>~isu',
-        "~<a[^>]+href='([^']+)'[^>]*>.*?<img[^>]+(?:data-src|src)='([^']+)'[^>]+alt='([^']+)'[^>]*>.*?</a>~isu",
-    ];
-
-    foreach ($patterns as $pattern) {
-        if (!preg_match_all($pattern, $html, $matches, PREG_SET_ORDER)) {
+    foreach ($items as $item) {
+        if (!is_array($item)) {
             continue;
         }
 
-        foreach ($matches as $match) {
-            $url = absoluteUrl((string) ($match[1] ?? $fallbackUrl));
-            $image = absoluteUrl((string) ($match[2] ?? ''));
-            $title = normalizeText((string) ($match[3] ?? ''));
+        $entry = $item['entry'] ?? $item['anime'] ?? $item;
+        if (!is_array($entry)) {
+            continue;
+        }
 
-            if ($image === '' || $title === '') {
-                continue;
-            }
+        $title = firstNonEmpty([
+            $entry['title'] ?? '',
+            $entry['title_english'] ?? '',
+            $entry['title_japanese'] ?? '',
+        ]);
 
-            $key = $title . '|' . $image;
-            $items[$key] = [
-                'title' => $title,
-                'image' => $image,
-                'url' => $url !== '' ? $url : $fallbackUrl,
-            ];
+        $image = safeUrl(
+            $entry['images']['jpg']['image_url']
+            ?? $entry['images']['webp']['image_url']
+            ?? $entry['images']['jpg']['large_image_url']
+            ?? ''
+        );
 
-            if (count($items) >= $limit) {
-                break 2;
-            }
+        $url = safeUrl($entry['url'] ?? '', '#');
+
+        if ($title === '' || $image === '') {
+            continue;
+        }
+
+        $key = mb_strtolower($title) . '|' . $image;
+        if (isset($seen[$key])) {
+            continue;
+        }
+        $seen[$key] = true;
+
+        $mapped[] = [
+            'title' => $title,
+            'image' => $image,
+            'url' => $url,
+        ];
+
+        if (count($mapped) >= $limit) {
+            break;
         }
     }
 
-    if (!$items) {
-        foreach (collectImagesFromHtml($html, $limit) as $index => $image) {
-            $items[] = [
-                'title' => 'Entry ' . ($index + 1),
-                'image' => absoluteUrl($image),
-                'url' => $fallbackUrl,
-            ];
-        }
-    }
-
-    return array_values(array_slice($items, 0, $limit));
-}
-
-function statFromText(string $text, string $label): int
-{
-    $pattern = '/' . preg_quote($label, '/') . '\s+([0-9,]+)/i';
-    if (preg_match($pattern, $text, $matches)) {
-        return (int) str_replace(',', '', (string) $matches[1]);
-    }
-
-    return 0;
+    return $mapped;
 }
 
 try {
@@ -192,77 +157,78 @@ try {
     if ($username === '') {
         respond([
             'ok' => false,
-            'message' => 'Missing username.',
+            'message' => 'Missing username.'
         ], 400);
     }
 
-    $profileUrl = 'https://myanimelist.net/profile/' . rawurlencode($username);
-    $animeListUrl = 'https://myanimelist.net/animelist/' . rawurlencode($username);
+    $userJson = httpGetJson('https://api.jikan.moe/v4/users/' . rawurlencode($username) . '/full');
+    $user = $userJson['data'] ?? null;
 
-    $profileHtml = fetchHtml($profileUrl);
-    $animeHtml = fetchHtml($animeListUrl);
-
-    $name = firstMatch($profileHtml, [
-        '~<h1[^>]*>(.*?)</h1>~isu',
-        '~<title>(.*?)</title>~isu',
-    ]) ?? $username;
-
-    if (stripos($name, ' - MyAnimeList.net') !== false) {
-        $name = trim(str_ireplace(' - MyAnimeList.net', '', $name));
+    if (!is_array($user)) {
+        throw new RuntimeException('User profile not found.');
     }
 
-    $about = firstMatch($profileHtml, [
-        '~id="about_me"[^>]*>(.*?)</(?:div|td|section)>~isu',
-        '~class="[^"]*profile-about-user[^"]*"[^>]*>(.*?)</(?:div|td|section)>~isu',
-        "~class='[^']*profile-about-user[^']*'[^>]*>(.*?)</(?:div|td|section)>~isu",
-        '~<meta\s+name="description"\s+content="([^"]+)"~isu',
-    ]) ?? 'No public profile text found.';
+    $listJson = httpGetJson('https://api.jikan.moe/v4/users/' . rawurlencode($username) . '/animelist?limit=10');
+    $list = is_array($listJson['data'] ?? null) ? $listJson['data'] : [];
 
-    $avatar = firstImage($profileHtml, [
-        '~<img[^>]+class="[^"]*user-image[^"]*"[^>]+(?:data-src|src)="([^"]+)"~isu',
-        "~<img[^>]+class='[^']*user-image[^']*'[^>]+(?:data-src|src)='([^']+)'~isu",
-        '~<meta\s+property="og:image"\s+content="([^"]+)"~isu',
-    ]) ?? '';
+    $profileUrl = safeUrl($user['url'] ?? '', 'https://myanimelist.net/profile/' . rawurlencode($username));
+    $animeListUrl = 'https://myanimelist.net/animelist/' . rawurlencode($username);
 
-    $heroCandidates = collectImagesFromHtml($profileHtml, 8);
-    $hero = absoluteUrl((string) ($heroCandidates[1] ?? ($heroCandidates[0] ?? $avatar)));
+    $avatar = safeUrl(
+        $user['images']['jpg']['image_url']
+        ?? $user['images']['webp']['image_url']
+        ?? $user['images']['jpg']['large_image_url']
+        ?? ''
+    );
 
-    $joined = firstMatch($profileHtml, [
-        '~Joined[^<]{0,40}</span>\s*<[^>]+>\s*(.*?)\s*</~isu',
-        '~Joined\s*</span>\s*<span[^>]*>(.*?)</span>~isu',
-        '~Joined\s*:\s*([^<\n\r]+)~isu',
-    ]) ?? 'Public profile';
+    $favorites = mapAnimeItems($user['favorites']['anime'] ?? [], 10);
+    $recentAnime = mapAnimeItems($list, 10);
 
-    $favorites = collectCoverCards($profileHtml, $profileUrl, 10);
-    $recentAnime = collectCoverCards($animeHtml, $animeListUrl, 10);
+    if (!$recentAnime) {
+        $recentAnime = $favorites;
+    }
 
-    $animeText = normalizeText($animeHtml);
+    $hero = $avatar;
+    if (!empty($recentAnime[0]['image'])) {
+        $hero = $recentAnime[0]['image'];
+    } elseif (!empty($favorites[0]['image'])) {
+        $hero = $favorites[0]['image'];
+    }
 
-    $stats = [
-        'watching' => statFromText($animeText, 'Watching'),
-        'completed' => statFromText($animeText, 'Completed'),
-        'on_hold' => max(statFromText($animeText, 'On-Hold'), statFromText($animeText, 'On Hold')),
-        'dropped' => statFromText($animeText, 'Dropped'),
-        'plan_to_watch' => statFromText($animeText, 'Plan to Watch'),
-    ];
+    $joined = 'Public profile';
+    if (!empty($user['joined'])) {
+        $ts = strtotime((string) $user['joined']);
+        if ($ts !== false) {
+            $joined = date('M d, Y', $ts);
+        }
+    }
 
-    $updates = [
-        'anime' => count($recentAnime),
-        'manga' => 0,
-    ];
+    $about = normalizeText($user['about'] ?? '');
+    if ($about === '') {
+        $about = 'No public profile text found.';
+    }
 
     respond([
         'ok' => true,
-        'name' => $name,
-        'status' => 'Active',
+        'name' => (string) ($user['username'] ?? $username),
+        'status' => 'Public profile available',
         'joined' => $joined,
         'about' => $about,
         'avatar' => $avatar,
         'hero' => $hero,
         'profile_url' => $profileUrl,
         'anime_list_url' => $animeListUrl,
-        'stats' => $stats,
-        'updates' => $updates,
+        'stats' => [
+            'watching' => (int) ($user['statistics']['anime']['watching'] ?? 0),
+            'completed' => (int) ($user['statistics']['anime']['completed'] ?? 0),
+            'on_hold' => (int) ($user['statistics']['anime']['on_hold'] ?? 0),
+            'dropped' => (int) ($user['statistics']['anime']['dropped'] ?? 0),
+            'plan_to_watch' => (int) ($user['statistics']['anime']['plan_to_watch'] ?? 0),
+        ],
+        'updates' => [
+            'anime' => count($recentAnime),
+            'manga' => (int) ($user['statistics']['manga']['reading'] ?? 0),
+        ],
         'recent_anime' => $recentAnime,
         'favorites' => $favorites,
     ]);

@@ -15,25 +15,8 @@ $profile = [
 ];
 
 $mal = [
-    'username'      => 'QliUMISHO',
-    'client_id'     => getenv('MAL_CLIENT_ID') ?: 'SET_IN_SERVER_ENV',
-    'client_secret' => getenv('MAL_CLIENT_SECRET') ?: 'SET_IN_SERVER_ENV',
+    'username' => 'QliUMISHO',
 ];
-
-function maskSecret(string $value): string
-{
-    if ($value === '' || $value === 'SET_IN_SERVER_ENV') {
-        return 'SET_IN_SERVER_ENV';
-    }
-
-    $len = strlen($value);
-
-    if ($len <= 8) {
-        return str_repeat('*', $len);
-    }
-
-    return substr($value, 0, 4) . str_repeat('*', max(4, $len - 8)) . substr($value, -4);
-}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -82,8 +65,6 @@ function maskSecret(string $value): string
 
     <div class="qli-page-shell qli-page-preload" id="qliPageShell">
         <div id="page" data-route="a">
-            <div class="loader" id="qliRouteLoader"></div>
-
             <div class="container">
                 <section class="a">
                     <div class="qli-shell">
@@ -91,10 +72,10 @@ function maskSecret(string $value): string
 
                         <div class="qli-container">
                             <header class="qli-topbar">
-                                <button class="qli-brand qli-brand-button" type="button" data-route-target="b" aria-label="Open anime profile view">
+                                <a class="qli-brand qli-brand-button" href="/" aria-label="Open portfolio home">
                                     <div class="qli-brand-kicker">DEV PORTFOLIO</div>
                                     <div class="qli-brand-name">Qli // Portfolio Website</div>
-                                </button>
+                                </a>
 
                                 <div class="qli-topbar-right">
                                     <nav class="qli-nav">
@@ -103,6 +84,7 @@ function maskSecret(string $value): string
                                         <a href="#stack">Stack</a>
                                         <a href="#contributions">Contributions</a>
                                         <a href="#repos">Repos</a>
+                                        <a href="/mal">MAL Page</a>
                                     </nav>
 
                                     <button class="qli-theme-toggle" id="qliThemeToggle" type="button" aria-label="Toggle theme">
@@ -195,7 +177,7 @@ function maskSecret(string $value): string
                                         <div class="qli-section-kicker">( About )</div>
                                         <h2 class="qli-section-title">Building useful systems with a restrained visual approach.</h2>
                                         <p class="qli-section-copy">
-                                            a short, concise view of my progress as an assistant developer.
+                                            A short, concise view of my progress as an assistant developer.
                                         </p>
                                     </div>
 
@@ -210,31 +192,35 @@ function maskSecret(string $value): string
                             </section>
 
                             <section class="qli-data-grid qli-divider" id="stack">
-                                <div class="qli-stack-card">
-                                    <div class="qli-section-kicker">STACK</div>
-                                    <div class="qli-stack-title">Stack split</div>
-                                    <div class="qli-stack-subtitle">from my public repos.</div>
+                                <aside class="qli-stack-card">
+                                    <div class="qli-section-kicker">( Stack )</div>
+                                    <h2 class="qli-stack-title">Current language distribution.</h2>
+                                    <p class="qli-stack-subtitle">Derived from public repositories and language bytes.</p>
 
                                     <div class="qli-stack-chart-wrap">
                                         <div class="qli-stack-chart" id="qliStackChart"></div>
                                     </div>
 
                                     <div class="qli-stack-legend" id="qliStackLegend">
-                                        <div class="qli-stack-empty">Loading stack...</div>
+                                        <div class="qli-stack-empty">Loading stack data.</div>
                                     </div>
-                                </div>
 
-                                <div class="qli-contrib-card" id="contributions">
-                                    <div class="qli-section-kicker">CONTRIBUTIONS</div>
-                                    <div class="qli-contrib-title">GitHub contribution graph</div>
-                                    <div class="qli-contrib-subtitle">heatmap of my GitHub activity</div>
+                                    <div style="margin-top:18px;">
+                                        <a href="/mal" class="qli-manga-navlink active" style="display:inline-flex;text-decoration:none;">Open MAL Page</a>
+                                    </div>
+                                </aside>
 
-                                    <div class="qli-contrib-total" id="qliContribTotal">Loading contributions...</div>
+                                <section class="qli-contrib-card" id="contributions">
+                                    <div class="qli-section-kicker">( Contributions )</div>
+                                    <h2 class="qli-contrib-title">Public GitHub contribution history.</h2>
+                                    <p class="qli-contrib-subtitle">Rendered by selected year using contribution calendar data.</p>
+
+                                    <div id="qliContribYears" class="qli-year-pills" style="margin-top:14px;"></div>
+                                    <div class="qli-contrib-total" id="qliContribTotal">Loading contributions.</div>
 
                                     <div class="qli-contrib-surface">
                                         <div class="qli-heatmap-scroll">
                                             <div class="qli-months-row" id="qliContribMonths"></div>
-
                                             <div class="qli-heatmap-main">
                                                 <div class="qli-heatmap-days">
                                                     <div class="qli-day-label"></div>
@@ -245,171 +231,22 @@ function maskSecret(string $value): string
                                                     <div class="qli-day-label">Fri</div>
                                                     <div class="qli-day-label"></div>
                                                 </div>
-
                                                 <div class="qli-heatmap-grid" id="qliContribGrid"></div>
                                             </div>
                                         </div>
-
-                                        <div class="qli-heatmap-legend-bar">
-                                            <span>Less</span>
-                                            <div class="qli-legend-swatch level-0"></div>
-                                            <div class="qli-legend-swatch level-1"></div>
-                                            <div class="qli-legend-swatch level-2"></div>
-                                            <div class="qli-legend-swatch level-3"></div>
-                                            <div class="qli-legend-swatch level-4"></div>
-                                            <span>More</span>
-                                        </div>
                                     </div>
-
-                                    <div class="qli-contrib-years-wrap">
-                                        <div class="qli-contrib-years-title">Years</div>
-                                        <div class="qli-contrib-years" id="qliContribYears"></div>
-                                    </div>
-                                </div>
+                                </section>
                             </section>
 
-                            <section class="qli-repos-section" id="repos">
-                                <div class="qli-section-kicker">( Public Repos )</div>
-                                <h2 class="qli-section-title qli-repos-title">Selected public repositories</h2>
-                                <p class="qli-section-copy qli-repos-copy">
-                                    My latest public repositories from GitHub.
-                                </p>
+                            <section class="qli-repos-section" id="repos" style="padding:34px 0 44px;">
+                                <div class="qli-section-kicker">( Repositories )</div>
+                                <h2 class="qli-repos-title">Recently updated public repositories.</h2>
+                                <p class="qli-repos-copy">Top public repositories pulled live from GitHub.</p>
 
                                 <div class="qli-repo-grid" id="qliRepoGrid">
-                                    <div class="qli-repo-empty">Loading public repositories...</div>
+                                    <div class="qli-repo-empty">Loading public repositories.</div>
                                 </div>
                             </section>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="b">
-                    <div class="qli-manga-shell">
-                        <header class="qli-manga-topbar">
-                            <button class="qli-manga-back" type="button" data-route-target="a">Back</button>
-                            <div class="qli-manga-title">Qliphoth-UTP's Profile</div>
-                            <div class="qli-manga-actions">
-                                <a href="#" target="_blank" rel="noopener noreferrer" id="qliMalProfileLink">About Me Design</a>
-                                <a href="#" target="_blank" rel="noopener noreferrer" id="qliMalAnimeListLink">Anime List</a>
-                            </div>
-                        </header>
-
-                        <div class="qli-manga-layout">
-                            <aside class="qli-manga-sidebar">
-                                <div class="qli-manga-avatar-panel">
-                                    <div class="qli-manga-avatar" id="qliMalAvatar"></div>
-                                    <div class="qli-manga-mini-actions">
-                                        <a href="<?= htmlspecialchars($profile['github'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer">GH</a>
-                                        <a href="<?= htmlspecialchars($profile['facebook'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer">FB</a>
-                                        <a href="<?= htmlspecialchars($profile['email'], ENT_QUOTES, 'UTF-8') ?>">Mail</a>
-                                    </div>
-                                </div>
-
-                                <div class="qli-manga-panel">
-                                    <div class="qli-manga-panel-title">User Details</div>
-                                    <div class="qli-manga-kv">
-                                        <span>Name</span>
-                                        <strong id="qliMalName">Loading...</strong>
-                                    </div>
-                                    <div class="qli-manga-kv">
-                                        <span>Status</span>
-                                        <strong id="qliMalStatus">Available</strong>
-                                    </div>
-                                    <div class="qli-manga-kv">
-                                        <span>Joined</span>
-                                        <strong id="qliMalJoined">Public profile</strong>
-                                    </div>
-                                </div>
-
-                                <div class="qli-manga-panel">
-                                    <div class="qli-manga-panel-title">Links</div>
-                                    <a class="qli-manga-navlink active" href="#" data-route-target="b">Anime Profile</a>
-                                    <a class="qli-manga-navlink" href="#" id="qliMalExternalProfile" target="_blank" rel="noopener noreferrer">View MAL Page</a>
-                                    <a class="qli-manga-navlink" href="#" id="qliMalExternalAnime" target="_blank" rel="noopener noreferrer">View Anime List</a>
-                                </div>
-
-                                <div class="qli-manga-panel">
-                                    <div class="qli-manga-panel-title">Anime Stats</div>
-                                    <div class="qli-manga-statline"><span>Watching</span><strong id="qliMalWatching">0</strong></div>
-                                    <div class="qli-manga-statline"><span>Completed</span><strong id="qliMalCompleted">0</strong></div>
-                                    <div class="qli-manga-statline"><span>On Hold</span><strong id="qliMalOnHold">0</strong></div>
-                                    <div class="qli-manga-statline"><span>Dropped</span><strong id="qliMalDropped">0</strong></div>
-                                    <div class="qli-manga-statline"><span>Plan to Watch</span><strong id="qliMalPlan">0</strong></div>
-                                </div>
-                            </aside>
-
-                            <main class="qli-manga-main">
-                                <section class="qli-manga-hero">
-                                    <div class="qli-manga-hero-cover" id="qliMalHeroCover"></div>
-                                    <div class="qli-manga-hero-overlay">
-                                        <div class="qli-manga-hero-badge">blue haired waifs/tsundere enthusiast</div>
-                                    </div>
-                                </section>
-
-                                <section class="qli-manga-block">
-                                    <div class="qli-manga-block-title">Profile Summary</div>
-                                    <div class="qli-manga-summary" id="qliMalAbout">
-                                        Loading profile summary...
-                                    </div>
-                                </section>
-
-                                <section class="qli-manga-grid-two">
-                                    <div class="qli-manga-block">
-                                        <div class="qli-manga-block-title">Recent Anime Titles</div>
-                                        <div class="qli-manga-covers" id="qliMalRecentAnime">
-                                            <div class="qli-manga-empty">Loading anime covers...</div>
-                                        </div>
-                                    </div>
-
-                                    <div class="qli-manga-block">
-                                        <div class="qli-manga-block-title">Top Favorites</div>
-                                        <div class="qli-manga-covers" id="qliMalFavorites">
-                                            <div class="qli-manga-empty">Loading favorites...</div>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <section class="qli-manga-block">
-                                    <div class="qli-manga-block-title">API App Configuration</div>
-                                    <div class="qli-api-grid">
-                                        <div class="qli-api-row">
-                                            <div class="qli-api-label">App Type</div>
-                                            <div class="qli-api-value">web</div>
-                                        </div>
-                                        <div class="qli-api-row">
-                                            <div class="qli-api-label">Client ID</div>
-                                            <div class="qli-api-value"><?= htmlspecialchars($mal['client_id'], ENT_QUOTES, 'UTF-8') ?></div>
-                                        </div>
-                                        <div class="qli-api-row">
-                                            <div class="qli-api-label">Client Secret</div>
-                                            <div class="qli-api-value"><?= htmlspecialchars(maskSecret($mal['client_secret']), ENT_QUOTES, 'UTF-8') ?></div>
-                                        </div>
-                                        <div class="qli-api-note">Client ID and Client Secret should not be disclosed.</div>
-                                    </div>
-                                </section>
-
-                                <section class="qli-manga-block">
-                                    <div class="qli-manga-block-title">Scraped MAL Data</div>
-                                    <div class="qli-manga-scrape-grid">
-                                        <div class="qli-manga-scrape-item">
-                                            <span>Anime Updates</span>
-                                            <strong id="qliMalAnimeUpdates">0</strong>
-                                        </div>
-                                        <div class="qli-manga-scrape-item">
-                                            <span>Manga Updates</span>
-                                            <strong id="qliMalMangaUpdates">0</strong>
-                                        </div>
-                                        <div class="qli-manga-scrape-item">
-                                            <span>Favorites Found</span>
-                                            <strong id="qliMalFavoritesCount">0</strong>
-                                        </div>
-                                        <div class="qli-manga-scrape-item">
-                                            <span>Profile URL</span>
-                                            <strong id="qliMalProfileUrlText">Loading...</strong>
-                                        </div>
-                                    </div>
-                                </section>
-                            </main>
                         </div>
                     </div>
                 </section>

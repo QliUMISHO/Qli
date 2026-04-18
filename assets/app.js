@@ -1,6 +1,7 @@
 (() => {
     const config = window.PORTFOLIO_CONFIG || {};
     const basePath = (config.basePath || '').replace(/\/$/, '');
+    const isMalPage = !!config.isMalPage;
 
     const $ = (selector, scope = document) => scope.querySelector(selector);
     const $$ = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
@@ -11,8 +12,6 @@
     let activeNameLabel = '';
     let activeShowCaret = false;
     let nameAnimating = false;
-    let currentRoute = 'a';
-    let isRouting = false;
 
     function escapeHtml(value) {
         return String(value ?? '')
@@ -515,44 +514,6 @@
         }
     }
 
-    function setBodyRoutingState(isBusy) {
-        document.body.classList.toggle('disable-hover', isBusy);
-    }
-
-    function routeTo(routeName) {
-        const page = $('#page');
-        const loader = $('#qliRouteLoader');
-
-        if (!page || !loader) return;
-        if (isRouting || currentRoute === routeName) return;
-
-        isRouting = true;
-        setBodyRoutingState(true);
-        loader.classList.add('is-active');
-
-        window.setTimeout(() => {
-            page.setAttribute('data-route', routeName);
-            currentRoute = routeName;
-        }, 500);
-
-        window.setTimeout(() => {
-            loader.classList.remove('is-active');
-            isRouting = false;
-            setBodyRoutingState(false);
-        }, 1500);
-    }
-
-    function bindRoutes() {
-        $$('[data-route-target]').forEach((node) => {
-            node.addEventListener('click', (event) => {
-                event.preventDefault();
-                const target = node.getAttribute('data-route-target');
-                if (!target) return;
-                routeTo(target);
-            });
-        });
-    }
-
     function normalizeText(value) {
         return String(value || '')
             .replace(/\s+/g, ' ')
@@ -611,6 +572,7 @@
         const malMangaUpdates = $('#qliMalMangaUpdates');
         const malFavoritesCount = $('#qliMalFavoritesCount');
         const malProfileUrlText = $('#qliMalProfileUrlText');
+        const malHeroTitle = $('#qliMalHeroTitle');
 
         if (malProfileLink) malProfileLink.href = profileUrl;
         if (malAnimeListLink) malAnimeListLink.href = animeListUrl;
@@ -624,9 +586,14 @@
 
         const heroNode = $('#qliMalHeroCover');
         if (heroNode) {
-            heroNode.style.backgroundImage = hero ? `url("${hero}")` : 'none';
+            heroNode.style.backgroundImage = hero
+                ? `linear-gradient(180deg, rgba(4,10,18,0.08) 0%, rgba(4,10,18,0.72) 100%), url("${hero}")`
+                : 'none';
+            heroNode.style.backgroundSize = 'cover';
+            heroNode.style.backgroundPosition = 'center';
         }
 
+        if (malHeroTitle) malHeroTitle.textContent = data.name || config.mal?.username || 'Unknown';
         if (malName) malName.textContent = data.name || config.mal?.username || 'Unknown';
         if (malJoined) malJoined.textContent = data.joined || 'Public profile';
         if (malStatus) malStatus.textContent = data.status || 'Active';
@@ -738,10 +705,15 @@
     document.addEventListener('DOMContentLoaded', () => {
         bindThemeToggle();
         bindLinkSquares();
-        bindNameSwitches();
-        bindRoutes();
-        loadPortfolioData();
+
+        if (!isMalPage) {
+            bindNameSwitches();
+            loadPortfolioData();
+            runStartupAnimation();
+        } else {
+            document.body.classList.remove('disable-hover');
+        }
+
         loadMALData();
-        runStartupAnimation();
     });
 })();

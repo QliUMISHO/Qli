@@ -9,6 +9,8 @@ if ($uri !== '/' && is_file($path)) {
 }
 
 $routes = [
+    '/' => __DIR__ . '/api/index.php',
+    '/mal' => __DIR__ . '/api/mal.php',
     '/api/github' => __DIR__ . '/api/github.php',
     '/api/github.php' => __DIR__ . '/api/github.php',
     '/api/mal_proxy' => __DIR__ . '/api/mal_proxy.php',
@@ -20,4 +22,5 @@ if (isset($routes[$uri])) {
     exit;
 }
 
-require __DIR__ . '/api/index.php';
+http_response_code(404);
+echo 'Not Found';
