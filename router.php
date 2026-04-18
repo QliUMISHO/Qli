@@ -10,6 +10,10 @@ if ($uri !== '/' && is_file($path)) {
 
 $routes = [
     '/' => __DIR__ . '/api/index.php',
+    '/about' => __DIR__ . '/api/index.php',
+    '/stack' => __DIR__ . '/api/index.php',
+    '/contributions' => __DIR__ . '/api/index.php',
+    '/repos' => __DIR__ . '/api/index.php',
     '/mal' => __DIR__ . '/api/mal.php',
     '/api/github' => __DIR__ . '/api/github.php',
     '/api/github.php' => __DIR__ . '/api/github.php',

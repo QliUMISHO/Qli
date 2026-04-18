@@ -582,13 +582,15 @@
         const avatarNode = $('#qliMalAvatar');
         if (avatarNode) {
             avatarNode.style.backgroundImage = avatar ? `url("${avatar}")` : 'none';
+            avatarNode.style.backgroundSize = 'cover';
+            avatarNode.style.backgroundPosition = 'center';
         }
 
         const heroNode = $('#qliMalHeroCover');
         if (heroNode) {
             heroNode.style.backgroundImage = hero
-                ? `linear-gradient(180deg, rgba(4,10,18,0.08) 0%, rgba(4,10,18,0.72) 100%), url("${hero}")`
-                : 'none';
+                ? `linear-gradient(180deg, rgba(4,10,18,0.10) 0%, rgba(4,10,18,0.76) 100%), url("${hero}")`
+                : 'linear-gradient(180deg, rgba(4,10,18,0.10) 0%, rgba(4,10,18,0.76) 100%)';
             heroNode.style.backgroundSize = 'cover';
             heroNode.style.backgroundPosition = 'center';
         }

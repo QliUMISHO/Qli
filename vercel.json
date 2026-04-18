@@ -7,16 +7,36 @@
   },
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/api/index.php"
+    },
+    {
+      "source": "/about",
+      "destination": "/api/index.php"
+    },
+    {
+      "source": "/stack",
+      "destination": "/api/index.php"
+    },
+    {
+      "source": "/contributions",
+      "destination": "/api/index.php"
+    },
+    {
+      "source": "/repos",
+      "destination": "/api/index.php"
+    },
+    {
+      "source": "/mal",
+      "destination": "/api/mal.php"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/:path*"
     },
     {
       "source": "/assets/:path*",
       "destination": "/assets/:path*"
-    },
-    {
-      "source": "/:path*",
-      "destination": "/api/index.php"
     }
   ]
 }
