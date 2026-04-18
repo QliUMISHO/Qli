@@ -548,12 +548,15 @@ html[data-theme="dark"] .qli-theme-toggle-thumb {
 }
 
 #qliNameValue.is-glitching {
+    position: relative;
     color: var(--qli-glitch-main);
     z-index: 2;
 }
 
-#qliNameValue.is-glitching span {
-    animation: qliGlitchPaths 5s step-end infinite;
+#qliNameValue.is-glitching .qli-glitch-text {
+    position: relative;
+    display: inline-block;
+    animation: qliGlitchPaths 2.1s step-end infinite;
 }
 
 #qliNameValue.is-glitching::before,
@@ -572,10 +575,10 @@ html[data-theme="dark"] .qli-theme-toggle-thumb {
     left: 15px;
     color: var(--qli-glitch-layer-a);
     animation:
-        qliGlitchPaths 5s step-end infinite,
-        qliGlitchOpacity 5s step-end infinite,
-        qliGlitchFontOne 8s step-end infinite,
-        qliGlitchMovementOne 10s step-end infinite;
+        qliGlitchPaths 2.1s step-end infinite,
+        qliGlitchOpacity 2.1s step-end infinite,
+        qliGlitchFontOne 3.2s step-end infinite,
+        qliGlitchMovementOne 3.8s step-end infinite;
 }
 
 #qliNameValue.is-glitching::after {
@@ -583,10 +586,10 @@ html[data-theme="dark"] .qli-theme-toggle-thumb {
     left: -10px;
     color: var(--qli-glitch-layer-b);
     animation:
-        qliGlitchPaths 5s step-end infinite,
-        qliGlitchOpacity 5s step-end infinite,
-        qliGlitchFontTwo 7s step-end infinite,
-        qliGlitchMovementTwo 8s step-end infinite;
+        qliGlitchPaths 2.1s step-end infinite,
+        qliGlitchOpacity 2.1s step-end infinite,
+        qliGlitchFontTwo 2.8s step-end infinite,
+        qliGlitchMovementTwo 3.1s step-end infinite;
 }
 
 html[data-theme="light"] #qliNameValue.is-glitching {
