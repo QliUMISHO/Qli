@@ -454,7 +454,7 @@
 
     async function fetchJsonSafely(url, fallbackMessage) {
         const response = await fetch(url, {
-            headers: { 'Accept': 'application/json' },
+            headers: { Accept: 'application/json' },
             cache: 'no-store'
         });
 
@@ -663,7 +663,9 @@
             const about = $('#qliMalAbout');
             const recent = $('#qliMalRecentAnime');
             const favs = $('#qliMalFavorites');
+            const status = $('#qliMalStatus');
 
+            if (status) status.textContent = 'Unavailable';
             if (about) about.textContent = 'Failed to load MyAnimeList profile data.';
             if (recent) recent.innerHTML = '<div class="qli-manga-empty">Failed to load recent anime.</div>';
             if (favs) favs.innerHTML = '<div class="qli-manga-empty">Failed to load favorites.</div>';
