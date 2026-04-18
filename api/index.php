@@ -72,7 +72,7 @@ $mal = [
 
                         <div class="qli-container">
                             <header class="qli-topbar">
-                                <a class="qli-brand qli-brand-button" href="/" aria-label="Open portfolio home">
+                                <a class="qli-brand qli-brand-button" href="/mal" aria-label="Open MAL page">
                                     <div class="qli-brand-kicker">DEV PORTFOLIO</div>
                                     <div class="qli-brand-name">Qli // Portfolio Website</div>
                                 </a>
@@ -84,7 +84,6 @@ $mal = [
                                         <a href="#stack">Stack</a>
                                         <a href="#contributions">Contributions</a>
                                         <a href="#repos">Repos</a>
-                                        <a href="/mal">MAL Page</a>
                                     </nav>
 
                                     <button class="qli-theme-toggle" id="qliThemeToggle" type="button" aria-label="Toggle theme">
@@ -204,10 +203,6 @@ $mal = [
                                     <div class="qli-stack-legend" id="qliStackLegend">
                                         <div class="qli-stack-empty">Loading stack data.</div>
                                     </div>
-
-                                    <div style="margin-top:18px;">
-                                        <a href="/mal" class="qli-manga-navlink active" style="display:inline-flex;text-decoration:none;">Open MAL Page</a>
-                                    </div>
                                 </aside>
 
                                 <section class="qli-contrib-card" id="contributions">
@@ -239,9 +234,9 @@ $mal = [
                             </section>
 
                             <section class="qli-repos-section" id="repos" style="padding:34px 0 44px;">
-                                <div class="qli-section-kicker">( Repositories )</div>
-                                <h2 class="qli-repos-title">Recently updated public repositories.</h2>
-                                <p class="qli-repos-copy">Top public repositories pulled live from GitHub.</p>
+                                <div class="qli-section-kicker">( GH Repos )</div>
+                                <h2 class="qli-repos-title">My ongoing and current projects that I am working on.</h2>
+                                <p class="qli-repos-copy">Visit my GitHub page for more details of these projects.</p>
 
                                 <div class="qli-repo-grid" id="qliRepoGrid">
                                     <div class="qli-repo-empty">Loading public repositories.</div>
