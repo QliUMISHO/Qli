@@ -1,11 +1,18 @@
 <?php
 declare(strict_types=1);
 
+error_reporting(E_ALL & ~E_DEPRECATED);
+ini_set('display_errors', '0');
+
 header('Content-Type: application/json; charset=utf-8');
 
 function respond(array $payload, int $status = 200): void
 {
-    http_response_code($status);
+    if (!headers_sent()) {
+        http_response_code($status);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+
     echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
@@ -47,51 +54,23 @@ function fetchHtml(string $url): string
     return (string) $body;
 }
 
-function textOrNull(?DOMNode $node): ?string
+function htmlDecode(string $value): string
 {
-    if (!$node) {
-        return null;
-    }
-
-    $text = trim(preg_replace('/\s+/u', ' ', $node->textContent ?? '') ?? '');
-    return $text !== '' ? $text : null;
+    return html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
 
-function firstXPathValue(DOMXPath $xpath, array $queries): ?string
+function normalizeText(string $value): string
 {
-    foreach ($queries as $query) {
-        $list = $xpath->query($query);
-        if ($list instanceof DOMNodeList && $list->length > 0) {
-            $value = textOrNull($list->item(0));
-            if ($value !== null) {
-                return $value;
-            }
-        }
-    }
-
-    return null;
-}
-
-function firstXPathAttr(DOMXPath $xpath, array $queries, string $attr): ?string
-{
-    foreach ($queries as $query) {
-        $list = $xpath->query($query);
-        if ($list instanceof DOMNodeList && $list->length > 0) {
-            $node = $list->item(0);
-            if ($node instanceof DOMElement && $node->hasAttribute($attr)) {
-                $value = trim($node->getAttribute($attr));
-                if ($value !== '') {
-                    return $value;
-                }
-            }
-        }
-    }
-
-    return null;
+    $value = strip_tags($value);
+    $value = htmlDecode($value);
+    $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+    return trim($value);
 }
 
 function absoluteUrl(string $url): string
 {
+    $url = trim($url);
+
     if ($url === '') {
         return '';
     }
@@ -100,15 +79,111 @@ function absoluteUrl(string $url): string
         return $url;
     }
 
-    return 'https://myanimelist.net' . $url;
+    if (strpos($url, '//') === 0) {
+        return 'https:' . $url;
+    }
+
+    if ($url[0] === '/') {
+        return 'https://myanimelist.net' . $url;
+    }
+
+    return 'https://myanimelist.net/' . ltrim($url, '/');
 }
 
 function collectImagesFromHtml(string $html, int $limit = 10): array
 {
-    preg_match_all('~https://cdn\\.myanimelist\\.net/images/[^\s"\']+~i', $html, $matches);
+    preg_match_all('~https://cdn\.myanimelist\.net/images/[^\s"\']+~i', $html, $matches);
     $urls = array_values(array_unique($matches[0] ?? []));
 
     return array_slice($urls, 0, $limit);
+}
+
+function firstMatch(string $html, array $patterns): ?string
+{
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $html, $matches)) {
+            $value = $matches[1] ?? '';
+            $value = normalizeText((string) $value);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+    }
+
+    return null;
+}
+
+function firstImage(string $html, array $patterns): ?string
+{
+    foreach ($patterns as $pattern) {
+        if (preg_match($pattern, $html, $matches)) {
+            $value = trim((string) ($matches[1] ?? ''));
+            if ($value !== '') {
+                return absoluteUrl($value);
+            }
+        }
+    }
+
+    return null;
+}
+
+function collectCoverCards(string $html, string $fallbackUrl, int $limit = 10): array
+{
+    $items = [];
+
+    $patterns = [
+        '~<a[^>]+href="([^"]+)"[^>]*>.*?<img[^>]+(?:data-src|src)="([^"]+)"[^>]+alt="([^"]+)"[^>]*>.*?</a>~isu',
+        "~<a[^>]+href='([^']+)'[^>]*>.*?<img[^>]+(?:data-src|src)='([^']+)'[^>]+alt='([^']+)'[^>]*>.*?</a>~isu",
+    ];
+
+    foreach ($patterns as $pattern) {
+        if (!preg_match_all($pattern, $html, $matches, PREG_SET_ORDER)) {
+            continue;
+        }
+
+        foreach ($matches as $match) {
+            $url = absoluteUrl((string) ($match[1] ?? $fallbackUrl));
+            $image = absoluteUrl((string) ($match[2] ?? ''));
+            $title = normalizeText((string) ($match[3] ?? ''));
+
+            if ($image === '' || $title === '') {
+                continue;
+            }
+
+            $key = $title . '|' . $image;
+            $items[$key] = [
+                'title' => $title,
+                'image' => $image,
+                'url' => $url !== '' ? $url : $fallbackUrl,
+            ];
+
+            if (count($items) >= $limit) {
+                break 2;
+            }
+        }
+    }
+
+    if (!$items) {
+        foreach (collectImagesFromHtml($html, $limit) as $index => $image) {
+            $items[] = [
+                'title' => 'Entry ' . ($index + 1),
+                'image' => absoluteUrl($image),
+                'url' => $fallbackUrl,
+            ];
+        }
+    }
+
+    return array_values(array_slice($items, 0, $limit));
+}
+
+function statFromText(string $text, string $label): int
+{
+    $pattern = '/' . preg_quote($label, '/') . '\s+([0-9,]+)/i';
+    if (preg_match($pattern, $text, $matches)) {
+        return (int) str_replace(',', '', (string) $matches[1]);
+    }
+
+    return 0;
 }
 
 try {
@@ -117,7 +192,7 @@ try {
     if ($username === '') {
         respond([
             'ok' => false,
-            'message' => 'Missing username.'
+            'message' => 'Missing username.',
         ], 400);
     }
 
@@ -127,91 +202,49 @@ try {
     $profileHtml = fetchHtml($profileUrl);
     $animeHtml = fetchHtml($animeListUrl);
 
-    libxml_use_internal_errors(true);
-
-    $profileDom = new DOMDocument();
-    $profileDom->loadHTML($profileHtml);
-    $profileXPath = new DOMXPath($profileDom);
-
-    $animeDom = new DOMDocument();
-    $animeDom->loadHTML($animeHtml);
-    $animeXPath = new DOMXPath($animeDom);
-
-    $name = firstXPathValue($profileXPath, [
-        '//h1',
-        '//span[contains(@class,"user-status-title")]',
-        '//title'
+    $name = firstMatch($profileHtml, [
+        '~<h1[^>]*>(.*?)</h1>~isu',
+        '~<title>(.*?)</title>~isu',
     ]) ?? $username;
 
-    $about = firstXPathValue($profileXPath, [
-        '//*[@id="about_me"]',
-        '//*[contains(@class,"profile-about-user")]',
-        '//div[contains(@class,"user-profile-about")]'
+    if (stripos($name, ' - MyAnimeList.net') !== false) {
+        $name = trim(str_ireplace(' - MyAnimeList.net', '', $name));
+    }
+
+    $about = firstMatch($profileHtml, [
+        '~id="about_me"[^>]*>(.*?)</(?:div|td|section)>~isu',
+        '~class="[^"]*profile-about-user[^"]*"[^>]*>(.*?)</(?:div|td|section)>~isu',
+        "~class='[^']*profile-about-user[^']*'[^>]*>(.*?)</(?:div|td|section)>~isu",
+        '~<meta\s+name="description"\s+content="([^"]+)"~isu',
     ]) ?? 'No public profile text found.';
 
-    $avatar = firstXPathAttr($profileXPath, [
-        '//img[contains(@class,"user-image")]',
-        '//img[contains(@class,"lazyload")]',
-        '//img[contains(@src,"cdn.myanimelist.net")]'
-    ], 'src') ?? '';
+    $avatar = firstImage($profileHtml, [
+        '~<img[^>]+class="[^"]*user-image[^"]*"[^>]+(?:data-src|src)="([^"]+)"~isu',
+        "~<img[^>]+class='[^']*user-image[^']*'[^>]+(?:data-src|src)='([^']+)'~isu",
+        '~<meta\s+property="og:image"\s+content="([^"]+)"~isu',
+    ]) ?? '';
 
     $heroCandidates = collectImagesFromHtml($profileHtml, 8);
-    $hero = $heroCandidates[1] ?? ($heroCandidates[0] ?? $avatar);
+    $hero = absoluteUrl((string) ($heroCandidates[1] ?? ($heroCandidates[0] ?? $avatar)));
 
-    $joined = firstXPathValue($profileXPath, [
-        '//*[contains(text(),"Joined")]/following-sibling::*[1]',
-        '//*[contains(@class,"user-status-data")]'
+    $joined = firstMatch($profileHtml, [
+        '~Joined[^<]{0,40}</span>\s*<[^>]+>\s*(.*?)\s*</~isu',
+        '~Joined\s*</span>\s*<span[^>]*>(.*?)</span>~isu',
+        '~Joined\s*:\s*([^<\n\r]+)~isu',
     ]) ?? 'Public profile';
 
-    $favorites = [];
-    foreach (collectImagesFromHtml($profileHtml, 20) as $index => $image) {
-        $favorites[] = [
-            'title' => 'Favorite ' . ($index + 1),
-            'image' => $image,
-            'url' => $profileUrl
-        ];
-        if (count($favorites) >= 10) {
-            break;
-        }
-    }
+    $favorites = collectCoverCards($profileHtml, $profileUrl, 10);
+    $recentAnime = collectCoverCards($animeHtml, $animeListUrl, 10);
 
-    $recentAnime = [];
-    foreach (collectImagesFromHtml($animeHtml, 20) as $index => $image) {
-        $recentAnime[] = [
-            'title' => 'Anime Entry ' . ($index + 1),
-            'image' => $image,
-            'url' => $animeListUrl
-        ];
-        if (count($recentAnime) >= 10) {
-            break;
-        }
-    }
+    $animeText = normalizeText($animeHtml);
 
     $stats = [
-        'watching' => 0,
-        'completed' => 0,
-        'on_hold' => 0,
-        'dropped' => 0,
-        'plan_to_watch' => 0,
+        'watching' => statFromText($animeText, 'Watching'),
+        'completed' => statFromText($animeText, 'Completed'),
+        'on_hold' => max(statFromText($animeText, 'On-Hold'), statFromText($animeText, 'On Hold')),
+        'dropped' => statFromText($animeText, 'Dropped'),
+        'plan_to_watch' => statFromText($animeText, 'Plan to Watch'),
     ];
-
-    $animeText = strip_tags($animeHtml);
-
-    if (preg_match('/Watching\s+([0-9,]+)/i', $animeText, $m)) {
-        $stats['watching'] = (int) str_replace(',', '', $m[1]);
-    }
-    if (preg_match('/Completed\s+([0-9,]+)/i', $animeText, $m)) {
-        $stats['completed'] = (int) str_replace(',', '', $m[1]);
-    }
-    if (preg_match('/On-Hold\s+([0-9,]+)/i', $animeText, $m) || preg_match('/On Hold\s+([0-9,]+)/i', $animeText, $m)) {
-        $stats['on_hold'] = (int) str_replace(',', '', $m[1]);
-    }
-    if (preg_match('/Dropped\s+([0-9,]+)/i', $animeText, $m)) {
-        $stats['dropped'] = (int) str_replace(',', '', $m[1]);
-    }
-    if (preg_match('/Plan to Watch\s+([0-9,]+)/i', $animeText, $m)) {
-        $stats['plan_to_watch'] = (int) str_replace(',', '', $m[1]);
-    }
 
     $updates = [
         'anime' => count($recentAnime),
@@ -224,20 +257,14 @@ try {
         'status' => 'Active',
         'joined' => $joined,
         'about' => $about,
-        'avatar' => absoluteUrl($avatar),
-        'hero' => absoluteUrl($hero),
+        'avatar' => $avatar,
+        'hero' => $hero,
         'profile_url' => $profileUrl,
         'anime_list_url' => $animeListUrl,
         'stats' => $stats,
         'updates' => $updates,
-        'recent_anime' => array_map(static function (array $item): array {
-            $item['image'] = absoluteUrl((string) ($item['image'] ?? ''));
-            return $item;
-        }, $recentAnime),
-        'favorites' => array_map(static function (array $item): array {
-            $item['image'] = absoluteUrl((string) ($item['image'] ?? ''));
-            return $item;
-        }, $favorites),
+        'recent_anime' => $recentAnime,
+        'favorites' => $favorites,
     ]);
 } catch (Throwable $e) {
     respond([

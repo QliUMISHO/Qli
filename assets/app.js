@@ -198,9 +198,13 @@
     }
 
     function renderStats(data) {
-        $('#qliStatRepos').textContent = formatNumber(data.stats?.publicRepos || 0);
-        $('#qliStatFollowers').textContent = formatNumber(data.stats?.followers || 0);
-        $('#qliStatContribs').textContent = formatNumber(data.contributions?.total || 0);
+        const statRepos = $('#qliStatRepos');
+        const statFollowers = $('#qliStatFollowers');
+        const statContribs = $('#qliStatContribs');
+
+        if (statRepos) statRepos.textContent = formatNumber(data.stats?.publicRepos || 0);
+        if (statFollowers) statFollowers.textContent = formatNumber(data.stats?.followers || 0);
+        if (statContribs) statContribs.textContent = formatNumber(data.contributions?.total || 0);
     }
 
     function renderStack(data) {
@@ -448,18 +452,36 @@
         activeShowCaret = showCaret;
     }
 
+    async function fetchJsonSafely(url, fallbackMessage) {
+        const response = await fetch(url, {
+            headers: { 'Accept': 'application/json' },
+            cache: 'no-store'
+        });
+
+        const raw = await response.text();
+        let data = null;
+
+        try {
+            data = raw ? JSON.parse(raw) : null;
+        } catch (error) {
+            const snippet = String(raw || '').replace(/\s+/g, ' ').trim().slice(0, 180);
+            throw new Error(`${fallbackMessage}${snippet ? ` ${snippet}` : ''}`);
+        }
+
+        if (!response.ok) {
+            throw new Error(data?.message || `HTTP ${response.status}`);
+        }
+
+        return data;
+    }
+
     async function loadPortfolioData() {
         try {
-            const response = await fetch(`${basePath}/api/github.php`, {
-                headers: { 'Accept': 'application/json' },
-                cache: 'no-store'
-            });
+            const data = await fetchJsonSafely(
+                `${basePath}/api/github.php`,
+                'GitHub API returned non-JSON output.'
+            );
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
             if (!data || data.ok !== true) {
                 throw new Error(data?.message || 'Invalid response');
             }
@@ -572,10 +594,28 @@
         const avatar = data.avatar || '';
         const hero = data.hero || avatar || '';
 
-        $('#qliMalProfileLink').href = profileUrl;
-        $('#qliMalAnimeListLink').href = animeListUrl;
-        $('#qliMalExternalProfile').href = profileUrl;
-        $('#qliMalExternalAnime').href = animeListUrl;
+        const malProfileLink = $('#qliMalProfileLink');
+        const malAnimeListLink = $('#qliMalAnimeListLink');
+        const malExternalProfile = $('#qliMalExternalProfile');
+        const malExternalAnime = $('#qliMalExternalAnime');
+        const malName = $('#qliMalName');
+        const malJoined = $('#qliMalJoined');
+        const malStatus = $('#qliMalStatus');
+        const malAbout = $('#qliMalAbout');
+        const malWatching = $('#qliMalWatching');
+        const malCompleted = $('#qliMalCompleted');
+        const malOnHold = $('#qliMalOnHold');
+        const malDropped = $('#qliMalDropped');
+        const malPlan = $('#qliMalPlan');
+        const malAnimeUpdates = $('#qliMalAnimeUpdates');
+        const malMangaUpdates = $('#qliMalMangaUpdates');
+        const malFavoritesCount = $('#qliMalFavoritesCount');
+        const malProfileUrlText = $('#qliMalProfileUrlText');
+
+        if (malProfileLink) malProfileLink.href = profileUrl;
+        if (malAnimeListLink) malAnimeListLink.href = animeListUrl;
+        if (malExternalProfile) malExternalProfile.href = profileUrl;
+        if (malExternalAnime) malExternalAnime.href = animeListUrl;
 
         const avatarNode = $('#qliMalAvatar');
         if (avatarNode) {
@@ -587,19 +627,19 @@
             heroNode.style.backgroundImage = hero ? `url("${hero}")` : 'none';
         }
 
-        $('#qliMalName').textContent = data.name || config.mal?.username || 'Unknown';
-        $('#qliMalJoined').textContent = data.joined || 'Public profile';
-        $('#qliMalStatus').textContent = data.status || 'Active';
-        $('#qliMalAbout').textContent = data.about || 'No public profile text found.';
-        $('#qliMalWatching').textContent = formatNumber(data.stats?.watching || 0);
-        $('#qliMalCompleted').textContent = formatNumber(data.stats?.completed || 0);
-        $('#qliMalOnHold').textContent = formatNumber(data.stats?.on_hold || 0);
-        $('#qliMalDropped').textContent = formatNumber(data.stats?.dropped || 0);
-        $('#qliMalPlan').textContent = formatNumber(data.stats?.plan_to_watch || 0);
-        $('#qliMalAnimeUpdates').textContent = formatNumber(data.updates?.anime || 0);
-        $('#qliMalMangaUpdates').textContent = formatNumber(data.updates?.manga || 0);
-        $('#qliMalFavoritesCount').textContent = formatNumber((data.favorites || []).length || 0);
-        $('#qliMalProfileUrlText').textContent = data.profile_url || 'Unavailable';
+        if (malName) malName.textContent = data.name || config.mal?.username || 'Unknown';
+        if (malJoined) malJoined.textContent = data.joined || 'Public profile';
+        if (malStatus) malStatus.textContent = data.status || 'Active';
+        if (malAbout) malAbout.textContent = safeInnerText(data.about || 'No public profile text found.');
+        if (malWatching) malWatching.textContent = formatNumber(data.stats?.watching || 0);
+        if (malCompleted) malCompleted.textContent = formatNumber(data.stats?.completed || 0);
+        if (malOnHold) malOnHold.textContent = formatNumber(data.stats?.on_hold || 0);
+        if (malDropped) malDropped.textContent = formatNumber(data.stats?.dropped || 0);
+        if (malPlan) malPlan.textContent = formatNumber(data.stats?.plan_to_watch || 0);
+        if (malAnimeUpdates) malAnimeUpdates.textContent = formatNumber(data.updates?.anime || 0);
+        if (malMangaUpdates) malMangaUpdates.textContent = formatNumber(data.updates?.manga || 0);
+        if (malFavoritesCount) malFavoritesCount.textContent = formatNumber((data.favorites || []).length || 0);
+        if (malProfileUrlText) malProfileUrlText.textContent = data.profile_url || 'Unavailable';
 
         renderMALCovers('qliMalRecentAnime', data.recent_anime || []);
         renderMALCovers('qliMalFavorites', data.favorites || []);
@@ -608,16 +648,10 @@
     async function loadMALData() {
         try {
             const username = encodeURIComponent(config.mal?.username || config.profile?.username || 'QliUMISHO');
-            const response = await fetch(`${basePath}/api/mal_proxy.php?username=${username}`, {
-                headers: { 'Accept': 'application/json' },
-                cache: 'no-store'
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
+            const data = await fetchJsonSafely(
+                `${basePath}/api/mal_proxy.php?username=${username}`,
+                'MAL API returned non-JSON output.'
+            );
 
             if (!data || data.ok !== true) {
                 throw new Error(data?.message || 'Invalid MAL response');
@@ -643,8 +677,10 @@
         const status = $('#qliStartupStatus');
 
         if (!startup || !pageShell || !bar || !status) {
-            pageShell?.classList.remove('qli-page-preload');
-            pageShell?.classList.add('qli-page-ready');
+            if (pageShell) {
+                pageShell.classList.remove('qli-page-preload');
+                pageShell.classList.add('qli-page-ready');
+            }
             return;
         }
 
