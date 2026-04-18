@@ -99,6 +99,19 @@
         caret.classList.toggle('is-visible', !!isVisible);
     }
 
+    function setRenderedName(value, isGlitching) {
+        const valueNode = $('#qliNameValue');
+        if (!valueNode) return;
+
+        const safeValue = escapeHtml(value);
+
+        if (isGlitching) {
+            valueNode.innerHTML = `<span class="qli-glitch-text">${safeValue}</span>`;
+        } else {
+            valueNode.textContent = value;
+        }
+    }
+
     function setGlitchState(value, label) {
         const valueNode = $('#qliNameValue');
         if (!valueNode) return;
@@ -110,13 +123,15 @@
     }
 
     function applyNameState(value, label, showCaret) {
-        const valueNode = $('#qliNameValue');
         const labelNode = $('#qliNameLabel');
+        const shouldGlitch = String(label || '').toUpperCase() === 'ALIAS' && String(value || '').trim() !== '';
 
-        if (!valueNode || !labelNode) return;
+        setRenderedName(value, shouldGlitch);
 
-        valueNode.textContent = value;
-        labelNode.textContent = label;
+        if (labelNode) {
+            labelNode.textContent = label;
+        }
+
         setCaretVisibility(showCaret);
         setGlitchState(value, label);
     }
