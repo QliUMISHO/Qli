@@ -210,7 +210,6 @@ $mal = [
                                     <h2 class="qli-contrib-title">Public GitHub contribution history.</h2>
                                     <p class="qli-contrib-subtitle">Rendered by selected year using contribution calendar data.</p>
 
-                                    <div id="qliContribYears" class="qli-year-pills" style="margin-top:14px;"></div>
                                     <div class="qli-contrib-total" id="qliContribTotal">Loading contributions.</div>
 
                                     <div class="qli-contrib-surface">
@@ -230,6 +229,8 @@ $mal = [
                                             </div>
                                         </div>
                                     </div>
+
+                                    <div id="qliContribYears" class="qli-year-pills" style="margin-top:14px;"></div>
                                 </section>
                             </section>
 
