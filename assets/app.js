@@ -11,6 +11,8 @@
     let activeNameLabel = '';
     let activeShowCaret = false;
     let nameAnimating = false;
+    let currentRoute = 'a';
+    let isRouting = false;
 
     function escapeHtml(value) {
         return String(value ?? '')
@@ -491,6 +493,149 @@
         }
     }
 
+    function setBodyRoutingState(isBusy) {
+        document.body.classList.toggle('disable-hover', isBusy);
+    }
+
+    function routeTo(routeName) {
+        const page = $('#page');
+        const loader = $('#qliRouteLoader');
+
+        if (!page || !loader) return;
+        if (isRouting || currentRoute === routeName) return;
+
+        isRouting = true;
+        setBodyRoutingState(true);
+        loader.classList.add('is-active');
+
+        window.setTimeout(() => {
+            page.setAttribute('data-route', routeName);
+            currentRoute = routeName;
+        }, 500);
+
+        window.setTimeout(() => {
+            loader.classList.remove('is-active');
+            isRouting = false;
+            setBodyRoutingState(false);
+        }, 1500);
+    }
+
+    function bindRoutes() {
+        $$('[data-route-target]').forEach((node) => {
+            node.addEventListener('click', (event) => {
+                event.preventDefault();
+                const target = node.getAttribute('data-route-target');
+                if (!target) return;
+                routeTo(target);
+            });
+        });
+    }
+
+    function normalizeText(value) {
+        return String(value || '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function safeInnerText(htmlString) {
+        const div = document.createElement('div');
+        div.innerHTML = htmlString || '';
+        return normalizeText(div.textContent || '');
+    }
+
+    function renderMALCovers(containerId, items) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (!Array.isArray(items) || !items.length) {
+            container.innerHTML = '<div class="qli-manga-empty">No public entries found.</div>';
+            return;
+        }
+
+        container.innerHTML = items.slice(0, 10).map((item) => {
+            const title = escapeHtml(item.title || 'Untitled');
+            const image = escapeHtml(item.image || '');
+            const href = escapeHtml(item.url || '#');
+
+            return `
+                <a class="qli-manga-cover-card" href="${href}" target="_blank" rel="noopener noreferrer" title="${title}">
+                    <div class="qli-manga-cover-thumb" style="background-image:url('${image}')"></div>
+                    <div class="qli-manga-cover-name">${title}</div>
+                </a>
+            `;
+        }).join('');
+    }
+
+    function renderMALData(data) {
+        const profileUrl = data.profile_url || '#';
+        const animeListUrl = data.anime_list_url || '#';
+        const avatar = data.avatar || '';
+        const hero = data.hero || avatar || '';
+
+        $('#qliMalProfileLink').href = profileUrl;
+        $('#qliMalAnimeListLink').href = animeListUrl;
+        $('#qliMalExternalProfile').href = profileUrl;
+        $('#qliMalExternalAnime').href = animeListUrl;
+
+        const avatarNode = $('#qliMalAvatar');
+        if (avatarNode) {
+            avatarNode.style.backgroundImage = avatar ? `url("${avatar}")` : 'none';
+        }
+
+        const heroNode = $('#qliMalHeroCover');
+        if (heroNode) {
+            heroNode.style.backgroundImage = hero ? `url("${hero}")` : 'none';
+        }
+
+        $('#qliMalName').textContent = data.name || config.mal?.username || 'Unknown';
+        $('#qliMalJoined').textContent = data.joined || 'Public profile';
+        $('#qliMalStatus').textContent = data.status || 'Active';
+        $('#qliMalAbout').textContent = data.about || 'No public profile text found.';
+        $('#qliMalWatching').textContent = formatNumber(data.stats?.watching || 0);
+        $('#qliMalCompleted').textContent = formatNumber(data.stats?.completed || 0);
+        $('#qliMalOnHold').textContent = formatNumber(data.stats?.on_hold || 0);
+        $('#qliMalDropped').textContent = formatNumber(data.stats?.dropped || 0);
+        $('#qliMalPlan').textContent = formatNumber(data.stats?.plan_to_watch || 0);
+        $('#qliMalAnimeUpdates').textContent = formatNumber(data.updates?.anime || 0);
+        $('#qliMalMangaUpdates').textContent = formatNumber(data.updates?.manga || 0);
+        $('#qliMalFavoritesCount').textContent = formatNumber((data.favorites || []).length || 0);
+        $('#qliMalProfileUrlText').textContent = data.profile_url || 'Unavailable';
+
+        renderMALCovers('qliMalRecentAnime', data.recent_anime || []);
+        renderMALCovers('qliMalFavorites', data.favorites || []);
+    }
+
+    async function loadMALData() {
+        try {
+            const username = encodeURIComponent(config.mal?.username || config.profile?.username || 'QliUMISHO');
+            const response = await fetch(`${basePath}/api/mal_proxy.php?username=${username}`, {
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store'
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (!data || data.ok !== true) {
+                throw new Error(data?.message || 'Invalid MAL response');
+            }
+
+            renderMALData(data);
+        } catch (error) {
+            console.error('MAL data load failed:', error);
+            const about = $('#qliMalAbout');
+            const recent = $('#qliMalRecentAnime');
+            const favs = $('#qliMalFavorites');
+
+            if (about) about.textContent = 'Failed to load MyAnimeList profile data.';
+            if (recent) recent.innerHTML = '<div class="qli-manga-empty">Failed to load recent anime.</div>';
+            if (favs) favs.innerHTML = '<div class="qli-manga-empty">Failed to load favorites.</div>';
+        }
+    }
+
     function runStartupAnimation() {
         const startup = $('#qliStartup');
         const pageShell = $('#qliPageShell');
@@ -556,7 +701,9 @@
         bindThemeToggle();
         bindLinkSquares();
         bindNameSwitches();
+        bindRoutes();
         loadPortfolioData();
+        loadMALData();
         runStartupAnimation();
     });
 })();

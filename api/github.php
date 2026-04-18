@@ -215,7 +215,7 @@ function normalizeDayLevel(int $count, int $maxCount): int
     if ($ratio <= 0.25) {
         return 1;
     }
-    if ($ratio <= 0.50) {
+    if ($ratio <= 0.50) {                                                                           
         return 2;
     }
     if ($ratio <= 0.75) {

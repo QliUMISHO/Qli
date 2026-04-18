@@ -79,6 +79,13 @@ body {
     color: var(--qli-ink);
     background: var(--qli-bg);
     transition: background .25s ease, color .25s ease;
+    overflow-x: hidden;
+}
+
+body.disable-hover,
+body.disable-hover * {
+    pointer-events: none !important;
+    cursor: wait !important;
 }
 
 .qli-page-shell {
@@ -226,10 +233,64 @@ body {
     animation: qliStartupFadeUp .9s ease forwards .9s;
 }
 
+#page {
+    min-width: 100vw;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+.container {
+    min-width: 100%;
+    min-height: 100%;
+    position: absolute;
+    inset: 0;
+}
+
+.loader {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background-color: #252525;
+    transform: translateX(-100%);
+    transition: transform 0.9s cubic-bezier(0.76, 0, 0.24, 1) 0.5s;
+    will-change: transform;
+    pointer-events: none;
+}
+
+.loader.is-active {
+    transform: translateX(0%);
+}
+
+.a,
+.b,
+.c {
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition-property: opacity, visibility;
+    transition-duration: 0.5s;
+    transition-delay: -0.1s;
+    transition-timing-function: ease-in-out;
+    height: 100%;
+    width: 100%;
+}
+
+[data-route="a"] .a,
+[data-route="b"] .b,
+[data-route="c"] .c {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+    transition: opacity 0.5s ease-in 0.9s;
+}
+
 .qli-shell {
     position: relative;
     min-height: 100vh;
     overflow-x: hidden;
+    width: 100%;
 }
 
 .qli-container {
@@ -263,6 +324,26 @@ body {
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--qli-line);
     transition: background .25s ease, border-color .25s ease;
+}
+
+.qli-brand {
+    display: block;
+}
+
+.qli-brand-button {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    color: inherit;
+    cursor: pointer;
+}
+
+.qli-brand-button:hover .qli-brand-name {
+    text-decoration: underline;
+    text-underline-offset: 4px;
 }
 
 .qli-brand-kicker {
@@ -1077,6 +1158,306 @@ html[data-theme="dark"] .qli-year-pill.active {
     background: var(--qli-accent);
 }
 
+/* Route B */
+
+.qli-manga-shell {
+    width: 100%;
+    min-height: 100vh;
+    background: #06090f;
+    color: #d7f6ff;
+    font-family: Arial, sans-serif;
+    padding: 0;
+}
+
+.qli-manga-topbar {
+    height: 28px;
+    background: #1b1b1b;
+    color: #ffffff;
+    border-bottom: 1px solid #4f4f4f;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    font-size: 11px;
+    gap: 10px;
+}
+
+.qli-manga-back {
+    background: #0b0b0b;
+    border: 1px solid #606060;
+    color: #d7f6ff;
+    font-size: 10px;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+
+.qli-manga-title {
+    flex: 1;
+    font-weight: 700;
+}
+
+.qli-manga-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.qli-manga-actions a {
+    color: #6bb4ff;
+    text-decoration: none;
+    font-size: 10px;
+}
+
+.qli-manga-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: calc(100vh - 28px);
+}
+
+.qli-manga-sidebar {
+    background: #0d0d0d;
+    border-right: 1px solid #202020;
+    padding: 10px 8px;
+}
+
+.qli-manga-avatar-panel,
+.qli-manga-panel {
+    background: #111318;
+    border: 1px solid #252831;
+    margin-bottom: 12px;
+    padding: 8px;
+}
+
+.qli-manga-avatar {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background: #1a1f29 center / cover no-repeat;
+    border: 1px solid #414552;
+    margin-bottom: 8px;
+}
+
+.qli-manga-mini-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.qli-manga-mini-actions a {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 24px;
+    background: #1a1d25;
+    border: 1px solid #33394a;
+    color: #d7f6ff;
+    text-decoration: none;
+    font-size: 10px;
+}
+
+.qli-manga-panel-title {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 11px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #273043;
+    padding-bottom: 6px;
+}
+
+.qli-manga-kv,
+.qli-manga-statline {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 4px 0;
+    font-size: 10px;
+    color: #b8d4de;
+    border-bottom: 1px dotted rgba(255,255,255,0.08);
+}
+
+.qli-manga-kv strong,
+.qli-manga-statline strong {
+    color: #ffffff;
+    text-align: right;
+}
+
+.qli-manga-navlink {
+    display: block;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+    background: #151923;
+    border: 1px solid #2d3546;
+    color: #74cfff;
+    text-decoration: none;
+    font-size: 10px;
+}
+
+.qli-manga-navlink.active {
+    background: #1c2433;
+    color: #ffffff;
+}
+
+.qli-manga-main {
+    padding: 14px;
+    background:
+        radial-gradient(circle at right, rgba(255, 0, 170, 0.18), transparent 18%),
+        radial-gradient(circle at right 60%, rgba(0, 255, 255, 0.18), transparent 16%),
+        #05080d;
+}
+
+.qli-manga-hero {
+    position: relative;
+    min-height: 340px;
+    border: 1px solid #293041;
+    background: #0f1520;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.qli-manga-hero-cover {
+    position: absolute;
+    inset: 0;
+    background: #111 center / cover no-repeat;
+    filter: saturate(1.05) contrast(1.02);
+}
+
+.qli-manga-hero-overlay {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 18px 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+}
+
+.qli-manga-hero-badge {
+    display: inline-block;
+    color: #00f0ff;
+    background: rgba(0,0,0,0.85);
+    border: 1px solid #00a6bf;
+    padding: 8px 12px;
+    font-size: 18px;
+    font-weight: 700;
+    text-transform: lowercase;
+}
+
+.qli-manga-block {
+    background: #070b11;
+    border: 1px solid #273043;
+    padding: 14px;
+    margin-bottom: 16px;
+}
+
+.qli-manga-block-title {
+    color: #00f0ff;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.qli-manga-summary {
+    color: #d2edf7;
+    background: #041a22;
+    border: 1px solid #0a5160;
+    padding: 14px;
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+.qli-manga-grid-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.qli-manga-covers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(86px, 1fr));
+    gap: 10px;
+}
+
+.qli-manga-cover-card {
+    text-decoration: none;
+    color: #d7f6ff;
+}
+
+.qli-manga-cover-thumb {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background: #111 center / cover no-repeat;
+    border: 1px solid #46506b;
+}
+
+.qli-manga-cover-name {
+    margin-top: 6px;
+    font-size: 10px;
+    line-height: 1.4;
+    color: #bdefff;
+}
+
+.qli-manga-empty {
+    color: #9bb7c3;
+    font-size: 11px;
+}
+
+.qli-api-grid {
+    background: #0b0f16;
+    border: 1px solid #212a3b;
+    padding: 12px;
+}
+
+.qli-api-row {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 14px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.qli-api-label {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.qli-api-value {
+    color: #f6b3b3;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.qli-api-note {
+    color: #ff8e8e;
+    font-size: 12px;
+    margin-top: 10px;
+}
+
+.qli-manga-scrape-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.qli-manga-scrape-item {
+    background: #081821;
+    border: 1px solid #0d5060;
+    padding: 12px;
+    color: #a8eefe;
+    font-size: 11px;
+}
+
+.qli-manga-scrape-item span {
+    display: block;
+    margin-bottom: 6px;
+    color: #82dbf7;
+}
+
+.qli-manga-scrape-item strong {
+    display: block;
+    color: #ffffff;
+    font-size: 12px;
+    word-break: break-word;
+}
+
 @keyframes qliSingleSlideOut {
     from { transform: translateX(0); opacity: 1; }
     to { transform: translateX(-12%); opacity: 0; }
@@ -1538,7 +1919,12 @@ html[data-theme="dark"] .qli-year-pill.active {
 @media (max-width: 1100px) {
     .qli-about-grid,
     .qli-data-grid,
-    .qli-repo-grid {
+    .qli-repo-grid,
+    .qli-manga-grid-two {
+        grid-template-columns: 1fr;
+    }
+
+    .qli-manga-layout {
         grid-template-columns: 1fr;
     }
 }
@@ -1588,5 +1974,10 @@ html[data-theme="dark"] .qli-year-pill.active {
 
     .qli-year-pill {
         width: 100%;
+    }
+
+    .qli-api-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
     }
 }
