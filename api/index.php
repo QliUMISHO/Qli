@@ -72,9 +72,9 @@ $mal = [
 
                         <div class="qli-container">
                             <header class="qli-topbar">
-                                <a class="qli-brand qli-brand-button" href="/mal" aria-label="Open MAL page">
+                                <a class="qli-brand qli-brand-button qli-brand-link-clean" href="/mal" aria-label="Open MAL page">
                                     <div class="qli-brand-kicker">DEV PORTFOLIO</div>
-                                    <div class="qli-brand-name">Qli // Portfolio Website</div>
+                                    <div class="qli-brand-name qli-brand-name-clean">Qli // Portfolio Website</div>
                                 </a>
 
                                 <div class="qli-topbar-right">
@@ -207,8 +207,8 @@ $mal = [
 
                                 <section class="qli-contrib-card" id="contributions">
                                     <div class="qli-section-kicker">( Contributions )</div>
-                                    <h2 class="qli-contrib-title">Public GitHub contribution history.</h2>
-                                    <p class="qli-contrib-subtitle">Rendered by selected year using contribution calendar data.</p>
+                                    <h2 class="qli-contrib-title qli-tight-title">Public GitHub contribution history.</h2>
+                                    <p class="qli-contrib-subtitle qli-tight-copy">Rendered by selected year using contribution calendar data.</p>
 
                                     <div class="qli-contrib-total" id="qliContribTotal">Loading contributions.</div>
 
@@ -236,8 +236,8 @@ $mal = [
 
                             <section class="qli-repos-section" id="repos" style="padding:34px 0 44px;">
                                 <div class="qli-section-kicker">( GH Repos )</div>
-                                <h2 class="qli-repos-title">My ongoing and current projects that I am working on.</h2>
-                                <p class="qli-repos-copy">Visit my GitHub page for more details of these projects.</p>
+                                <h2 class="qli-repos-title qli-tight-title">My ongoing and current projects that I am working on.</h2>
+                                <p class="qli-repos-copy qli-tight-copy">Visit my GitHub page for more details of these projects.</p>
 
                                 <div class="qli-repo-grid" id="qliRepoGrid">
                                     <div class="qli-repo-empty">Loading public repositories.</div>

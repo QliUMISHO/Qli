@@ -97,7 +97,7 @@ function safeUrl(?string $value, string $fallback = ''): string
     return $fallback;
 }
 
-function mapAnimeItems(array $items, int $limit = 10): array
+function mapMediaItems(array $items, int $limit = 10): array
 {
     $mapped = [];
     $seen = [];
@@ -107,7 +107,7 @@ function mapAnimeItems(array $items, int $limit = 10): array
             continue;
         }
 
-        $entry = $item['entry'] ?? $item['anime'] ?? $item;
+        $entry = $item['entry'] ?? $item['anime'] ?? $item['manga'] ?? $item;
         if (!is_array($entry)) {
             continue;
         }
@@ -171,22 +171,36 @@ try {
         ?? ''
     );
 
-    $favorites = mapAnimeItems($user['favorites']['anime'] ?? [], 10);
+    $favoriteAnime = mapMediaItems($user['favorites']['anime'] ?? [], 10);
+    $favoriteManga = mapMediaItems($user['favorites']['manga'] ?? [], 10);
 
     $recentAnime = [];
     if (!empty($user['updates']['anime']) && is_array($user['updates']['anime'])) {
-        $recentAnime = mapAnimeItems($user['updates']['anime'], 10);
+        $recentAnime = mapMediaItems($user['updates']['anime'], 10);
+    }
+
+    $recentManga = [];
+    if (!empty($user['updates']['manga']) && is_array($user['updates']['manga'])) {
+        $recentManga = mapMediaItems($user['updates']['manga'], 10);
     }
 
     if (!$recentAnime) {
-        $recentAnime = $favorites;
+        $recentAnime = $favoriteAnime;
+    }
+
+    if (!$recentManga) {
+        $recentManga = $favoriteManga;
     }
 
     $hero = $avatar;
     if (!empty($recentAnime[0]['image'])) {
         $hero = $recentAnime[0]['image'];
-    } elseif (!empty($favorites[0]['image'])) {
-        $hero = $favorites[0]['image'];
+    } elseif (!empty($favoriteAnime[0]['image'])) {
+        $hero = $favoriteAnime[0]['image'];
+    } elseif (!empty($recentManga[0]['image'])) {
+        $hero = $recentManga[0]['image'];
+    } elseif (!empty($favoriteManga[0]['image'])) {
+        $hero = $favoriteManga[0]['image'];
     }
 
     $joined = 'Public profile';
@@ -221,10 +235,12 @@ try {
         ],
         'updates' => [
             'anime' => (int) count($recentAnime),
-            'manga' => (int) ($user['statistics']['manga']['reading'] ?? 0),
+            'manga' => (int) count($recentManga),
         ],
         'recent_anime' => $recentAnime,
-        'favorites' => $favorites,
+        'favorites' => $favoriteAnime,
+        'recent_manga' => $recentManga,
+        'favorite_manga' => $favoriteManga,
     ]);
 } catch (Throwable $e) {
     respond([

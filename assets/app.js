@@ -571,6 +571,7 @@
         const malAnimeUpdates = $('#qliMalAnimeUpdates');
         const malMangaUpdates = $('#qliMalMangaUpdates');
         const malFavoritesCount = $('#qliMalFavoritesCount');
+        const malFavoriteMangaCount = $('#qliMalFavoriteMangaCount');
         const malProfileUrlText = $('#qliMalProfileUrlText');
         const malHeroTitle = $('#qliMalHeroTitle');
 
@@ -608,15 +609,18 @@
         if (malAnimeUpdates) malAnimeUpdates.textContent = formatNumber(data.updates?.anime || 0);
         if (malMangaUpdates) malMangaUpdates.textContent = formatNumber(data.updates?.manga || 0);
         if (malFavoritesCount) malFavoritesCount.textContent = formatNumber((data.favorites || []).length || 0);
+        if (malFavoriteMangaCount) malFavoriteMangaCount.textContent = formatNumber((data.favorite_manga || []).length || 0);
         if (malProfileUrlText) malProfileUrlText.textContent = data.profile_url || 'Unavailable';
 
         renderMALCovers('qliMalRecentAnime', data.recent_anime || []);
         renderMALCovers('qliMalFavorites', data.favorites || []);
+        renderMALCovers('qliMalRecentManga', data.recent_manga || []);
+        renderMALCovers('qliMalFavoriteManga', data.favorite_manga || []);
     }
 
     async function loadMALData() {
         try {
-            const username = encodeURIComponent(config.mal?.username || config.profile?.username || 'QliUMISHO');
+            const username = encodeURIComponent(config.mal?.username || config.profile?.username || 'CartaQliphoth-UT');
             const data = await fetchJsonSafely(
                 `${basePath}/api/mal_proxy.php?username=${username}`,
                 'MAL API returned non-JSON output.'
@@ -632,12 +636,16 @@
             const about = $('#qliMalAbout');
             const recent = $('#qliMalRecentAnime');
             const favs = $('#qliMalFavorites');
+            const recentManga = $('#qliMalRecentManga');
+            const favManga = $('#qliMalFavoriteManga');
             const status = $('#qliMalStatus');
 
             if (status) status.textContent = 'Unavailable';
             if (about) about.textContent = 'Failed to load MyAnimeList profile data.';
             if (recent) recent.innerHTML = '<div class="qli-manga-empty">Failed to load recent anime.</div>';
             if (favs) favs.innerHTML = '<div class="qli-manga-empty">Failed to load favorites.</div>';
+            if (recentManga) recentManga.innerHTML = '<div class="qli-manga-empty">Failed to load recent manga.</div>';
+            if (favManga) favManga.innerHTML = '<div class="qli-manga-empty">Failed to load manga favorites.</div>';
         }
     }
 

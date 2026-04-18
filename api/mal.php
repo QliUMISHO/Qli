@@ -113,9 +113,25 @@ $mal = [
                     </div>
 
                     <div class="qli-manga-block">
-                        <div class="qli-manga-block-title">Top Favorites</div>
+                        <div class="qli-manga-block-title">Top Favorite Anime</div>
                         <div class="qli-manga-covers" id="qliMalFavorites">
                             <div class="qli-manga-empty">Loading favorites.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="qli-manga-grid-two">
+                    <div class="qli-manga-block">
+                        <div class="qli-manga-block-title">Recent Manga Titles</div>
+                        <div class="qli-manga-covers" id="qliMalRecentManga">
+                            <div class="qli-manga-empty">Loading manga covers.</div>
+                        </div>
+                    </div>
+
+                    <div class="qli-manga-block">
+                        <div class="qli-manga-block-title">Top Favorite Manga</div>
+                        <div class="qli-manga-covers" id="qliMalFavoriteManga">
+                            <div class="qli-manga-empty">Loading manga favorites.</div>
                         </div>
                     </div>
                 </section>
@@ -154,6 +170,10 @@ $mal = [
                         <div class="qli-api-row">
                             <span>Favorites Found</span>
                             <strong id="qliMalFavoritesCount">0</strong>
+                        </div>
+                        <div class="qli-api-row">
+                            <span>Manga Favorites</span>
+                            <strong id="qliMalFavoriteMangaCount">0</strong>
                         </div>
                         <div class="qli-api-row">
                             <span>Profile URL</span>

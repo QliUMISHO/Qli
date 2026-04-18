@@ -1981,3 +1981,55 @@ html[data-theme="dark"] .qli-year-pill.active {
         gap: 6px;
     }
 }
+
+.qli-brand-link-clean,
+.qli-brand-link-clean:hover,
+.qli-brand-link-clean:focus,
+.qli-brand-link-clean:active,
+.qli-brand-name-clean,
+.qli-brand-name-clean:hover,
+.qli-brand-name-clean:focus,
+.qli-brand-name-clean:active {
+    text-decoration: none !important;
+}
+
+.qli-brand-link-clean {
+    color: inherit;
+}
+
+.qli-brand-link-clean:hover .qli-brand-name-clean,
+.qli-brand-link-clean:focus .qli-brand-name-clean {
+    text-decoration: none !important;
+}
+
+.qli-tight-title {
+    margin-top: 8px !important;
+    margin-bottom: 0 !important;
+}
+
+.qli-tight-copy {
+    margin-top: 6px !important;
+    margin-bottom: 0 !important;
+}
+
+.qli-contrib-title,
+.qli-repos-title {
+    line-height: 1.04;
+}
+
+.qli-contrib-subtitle,
+.qli-repos-copy {
+    line-height: 1.5;
+}
+
+.qli-manga-grid-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 980px) {
+    .qli-manga-grid-two {
+        grid-template-columns: 1fr;
+    }
+}
