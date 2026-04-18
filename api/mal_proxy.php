@@ -152,27 +152,17 @@ function mapAnimeItems(array $items, int $limit = 10): array
 }
 
 try {
-    $username = trim((string) ($_GET['username'] ?? ''));
+    $fixedUsername = 'CartaQliphoth-UT';
 
-    if ($username === '') {
-        respond([
-            'ok' => false,
-            'message' => 'Missing username.'
-        ], 400);
-    }
-
-    $userJson = httpGetJson('https://api.jikan.moe/v4/users/' . rawurlencode($username) . '/full');
+    $userJson = httpGetJson('https://api.jikan.moe/v4/users/' . rawurlencode($fixedUsername) . '/full');
     $user = $userJson['data'] ?? null;
 
     if (!is_array($user)) {
         throw new RuntimeException('User profile not found.');
     }
 
-    $listJson = httpGetJson('https://api.jikan.moe/v4/users/' . rawurlencode($username) . '/animelist?limit=10');
-    $list = is_array($listJson['data'] ?? null) ? $listJson['data'] : [];
-
-    $profileUrl = safeUrl($user['url'] ?? '', 'https://myanimelist.net/profile/' . rawurlencode($username));
-    $animeListUrl = 'https://myanimelist.net/animelist/' . rawurlencode($username);
+    $profileUrl = safeUrl($user['url'] ?? '', 'https://myanimelist.net/profile/' . rawurlencode($fixedUsername));
+    $animeListUrl = 'https://myanimelist.net/animelist/' . rawurlencode($fixedUsername);
 
     $avatar = safeUrl(
         $user['images']['jpg']['image_url']
@@ -182,7 +172,11 @@ try {
     );
 
     $favorites = mapAnimeItems($user['favorites']['anime'] ?? [], 10);
-    $recentAnime = mapAnimeItems($list, 10);
+
+    $recentAnime = [];
+    if (!empty($user['updates']['anime']) && is_array($user['updates']['anime'])) {
+        $recentAnime = mapAnimeItems($user['updates']['anime'], 10);
+    }
 
     if (!$recentAnime) {
         $recentAnime = $favorites;
@@ -210,7 +204,7 @@ try {
 
     respond([
         'ok' => true,
-        'name' => (string) ($user['username'] ?? $username),
+        'name' => (string) ($user['username'] ?? $fixedUsername),
         'status' => 'Public profile available',
         'joined' => $joined,
         'about' => $about,
@@ -226,7 +220,7 @@ try {
             'plan_to_watch' => (int) ($user['statistics']['anime']['plan_to_watch'] ?? 0),
         ],
         'updates' => [
-            'anime' => count($recentAnime),
+            'anime' => (int) count($recentAnime),
             'manga' => (int) ($user['statistics']['manga']['reading'] ?? 0),
         ],
         'recent_anime' => $recentAnime,
