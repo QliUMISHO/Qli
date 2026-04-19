@@ -2033,3 +2033,178 @@ html[data-theme="dark"] .qli-year-pill.active {
         grid-template-columns: 1fr;
     }
 }
+
+.qli-brand-link-clean,
+.qli-brand-link-clean:hover,
+.qli-brand-link-clean:focus,
+.qli-brand-link-clean:active,
+.qli-brand-name-clean,
+.qli-brand-name-clean:hover,
+.qli-brand-name-clean:focus,
+.qli-brand-name-clean:active {
+    text-decoration: none !important;
+}
+
+.qli-brand-link-clean {
+    color: inherit;
+}
+
+.qli-brand-link-clean:hover .qli-brand-name-clean,
+.qli-brand-link-clean:focus .qli-brand-name-clean {
+    text-decoration: none !important;
+}
+
+.qli-tight-title {
+    margin-top: 6px !important;
+    margin-bottom: 0 !important;
+}
+
+.qli-tight-copy {
+    margin-top: 4px !important;
+    margin-bottom: 0 !important;
+}
+
+.qli-data-grid {
+    align-items: start;
+}
+
+.qli-contrib-card-editorial {
+    padding: 22px 22px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-height: auto;
+}
+
+.qli-contrib-total-editorial {
+    margin-top: 10px;
+    margin-bottom: 0;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+}
+
+.qli-contrib-surface-editorial {
+    margin-top: 14px;
+    padding: 18px 18px 16px;
+    border-radius: 22px;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%),
+        var(--qli-paper-2);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+}
+
+.qli-contrib-footer-editorial {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+}
+
+.qli-contrib-years-block {
+    padding: 16px 16px 14px;
+    border: 1px solid var(--qli-line);
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%);
+}
+
+.qli-contrib-years-label {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--qli-muted);
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+
+.qli-year-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.qli-year-pill {
+    min-width: 92px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.qli-contrib-notes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.qli-contrib-note-card {
+    min-height: 100%;
+    padding: 16px 15px 15px;
+    border: 1px solid var(--qli-line);
+    border-radius: 18px;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%),
+        var(--qli-paper);
+}
+
+.qli-contrib-note-kicker {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--qli-accent);
+    font-weight: 800;
+}
+
+.qli-contrib-note-title {
+    margin-top: 8px;
+    font-size: 15px;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    font-weight: 800;
+}
+
+.qli-contrib-note-copy {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.65;
+    color: var(--qli-muted);
+}
+
+.qli-contrib-title,
+.qli-repos-title {
+    line-height: 1.02;
+}
+
+.qli-contrib-subtitle,
+.qli-repos-copy {
+    line-height: 1.45;
+}
+
+.qli-repos-section {
+    padding-top: 36px !important;
+}
+
+.qli-repo-grid {
+    margin-top: 14px;
+}
+
+@media (max-width: 1100px) {
+    .qli-contrib-footer-editorial {
+        grid-template-columns: 1fr;
+    }
+
+    .qli-contrib-notes-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}
+
+@media (max-width: 860px) {
+    .qli-contrib-notes-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .qli-year-pill {
+        min-width: 84px;
+        flex: 1 1 auto;
+    }
+}

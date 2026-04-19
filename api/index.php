@@ -205,14 +205,14 @@ $mal = [
                                     </div>
                                 </aside>
 
-                                <section class="qli-contrib-card" id="contributions">
+                                <section class="qli-contrib-card qli-contrib-card-editorial" id="contributions">
                                     <div class="qli-section-kicker">( Contributions )</div>
                                     <h2 class="qli-contrib-title qli-tight-title">Public GitHub contribution history.</h2>
                                     <p class="qli-contrib-subtitle qli-tight-copy">Rendered by selected year using contribution calendar data.</p>
 
-                                    <div class="qli-contrib-total" id="qliContribTotal">Loading contributions.</div>
+                                    <div class="qli-contrib-total qli-contrib-total-editorial" id="qliContribTotal">Loading contributions.</div>
 
-                                    <div class="qli-contrib-surface">
+                                    <div class="qli-contrib-surface qli-contrib-surface-editorial">
                                         <div class="qli-heatmap-scroll">
                                             <div class="qli-months-row" id="qliContribMonths"></div>
                                             <div class="qli-heatmap-main">
@@ -230,7 +230,30 @@ $mal = [
                                         </div>
                                     </div>
 
-                                    <div id="qliContribYears" class="qli-year-pills" style="margin-top:14px;"></div>
+                                    <div class="qli-contrib-footer-editorial">
+                                        <div class="qli-contrib-years-block">
+                                            <div class="qli-contrib-years-label">Browse by year</div>
+                                            <div id="qliContribYears" class="qli-year-pills"></div>
+                                        </div>
+
+                                        <div class="qli-contrib-notes-grid">
+                                            <div class="qli-contrib-note-card">
+                                                <div class="qli-contrib-note-kicker">Rhythm</div>
+                                                <div class="qli-contrib-note-title">Worklog cadence</div>
+                                                <div class="qli-contrib-note-copy">A compact year-by-year map of commits, pushes, and coding bursts.</div>
+                                            </div>
+                                            <div class="qli-contrib-note-card">
+                                                <div class="qli-contrib-note-kicker">Reading</div>
+                                                <div class="qli-contrib-note-title">Editorial view</div>
+                                                <div class="qli-contrib-note-copy">Built to feel closer to a portfolio spread than a raw analytics widget.</div>
+                                            </div>
+                                            <div class="qli-contrib-note-card">
+                                                <div class="qli-contrib-note-kicker">Archive</div>
+                                                <div class="qli-contrib-note-title">Year selection</div>
+                                                <div class="qli-contrib-note-copy">Use the year controls to switch the calendar without leaving the page.</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </section>
                             </section>
 
